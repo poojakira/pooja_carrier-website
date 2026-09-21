@@ -1,5 +1,7 @@
 # Career OS
 
+**Repository owner & maintainer:** Pooja Kiran ([@poojakira](https://github.com/poojakira)) — I review changes, verify public claims, and maintain the repository record.
+
 Personal career automation tool for job search workflow.
 
 ## Features
