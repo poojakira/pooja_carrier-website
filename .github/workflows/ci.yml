@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Check required application routes
+        run: |
+          node - <<'NODE'
+          const fs = require("fs");
+          const required = [
+            "app/page.tsx",
+            "app/api/ai-chat/route.ts",
+            "app/api/resume-tweak/route.ts",
+            "app/api/send-resume/route.ts",
+          ];
+          const missing = required.filter((p) => !fs.existsSync(p));
+          if (missing.length) {
+            throw new Error("Missing required files: " + missing.join(", "));
+          }
+          console.log("route smoke checks passed");
+          NODE
+
+      - name: Production build
+        run: npm run build
