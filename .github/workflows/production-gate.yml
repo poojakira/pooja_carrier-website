@@ -26,7 +26,12 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
-      - name: Gate 1
+      - name: Security contract
+        run: node scripts/verify-security.mjs
+      - name: TypeScript
         run: npx tsc --noEmit
-      - name: Gate 2
+      - name: Production build
+        env:
+          CAREER_OS_ACCESS_KEY: ci-access-key-only-not-a-production-secret-0001
+          CAREER_OS_SESSION_SECRET: ci-session-secret-only-not-production-0001
         run: npm run build
