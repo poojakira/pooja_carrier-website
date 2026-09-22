@@ -17,7 +17,7 @@
     "nodemailer": "6.9.16",
     "openai": "4.77.0",
     "pdf-lib": "1.17.1",
-    "react-hot-toast": "2.4.1"
+    "react-hot-toast": "2.6.1"
   },
   "devDependencies": {
     "@types/node": "22.10.2",
