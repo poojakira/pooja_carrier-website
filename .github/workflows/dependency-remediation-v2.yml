@@ -23,7 +23,7 @@ jobs:
           cache: npm
       - name: Update supported dependency lines
         run: |
-          npm install --save-exact next@15.5.25 nodemailer@10.0.10
+          npm install --save-exact next@15.5.26 nodemailer@10.0.10
           npm install --save-dev --save-exact postcss@8.5.28
           npm uninstall --save-dev @types/nodemailer || true
           npm audit fix
