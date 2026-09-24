@@ -12,25 +12,27 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      CAREER_OS_ACCESS_KEY: ci-access-key-only-not-a-production-secret-0001
+      CAREER_OS_SESSION_SECRET: ci-session-secret-only-not-production-0001
     steps:
-      - uses: actions/checkout@v4
-
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
-
       - name: Install dependencies
         run: npm ci
-
       - name: Dependency audit
         run: npm audit --audit-level=high
-
+      - name: Security contract
+        run: npm test
+      - name: Lint
+        run: npm run lint
       - name: Type check
-        run: npx tsc --noEmit
-
+        run: npm run typecheck
       - name: Check required application routes
         run: |
           node - <<'NODE'
@@ -40,13 +42,11 @@ jobs:
             "app/api/ai-chat/route.ts",
             "app/api/resume-tweak/route.ts",
             "app/api/send-resume/route.ts",
+            "app/api/generate-pdf/route.ts",
           ];
           const missing = required.filter((p) => !fs.existsSync(p));
-          if (missing.length) {
-            throw new Error("Missing required files: " + missing.join(", "));
-          }
+          if (missing.length) throw new Error("Missing required files: " + missing.join(", "));
           console.log("route smoke checks passed");
           NODE
-
       - name: Production build
         run: npm run build

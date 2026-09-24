@@ -1,4 +1,4 @@
-name: Verified dependency remediation v2
+name: Verified dependency remediation v3
 
 on:
   push:
@@ -14,25 +14,30 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
           cache: npm
-      - name: Update supported dependency lines
+      - name: Generate the verified supported lockfile
         run: |
-          npm install --save-exact next@15.5.26 nodemailer@10.0.10
-          npm install --save-dev --save-exact postcss@8.5.28
+          npm install --save-exact next@16.3.6 nodemailer@10.0.10 react-hot-toast@2.6.1
+          npm install --save-dev --save-exact postcss@8.5.28 eslint@9.39.5 eslint-config-next@16.3.6
           npm uninstall --save-dev @types/nodemailer || true
           npm audit fix
       - name: Verify security and application
+        env:
+          CAREER_OS_ACCESS_KEY: ci-access-key-only-not-a-production-secret-0001
+          CAREER_OS_SESSION_SECRET: ci-session-secret-only-not-production-0001
         run: |
           npm audit --audit-level=high
+          npm test
           npm run lint
+          npm run typecheck
           npm run build
-      - name: Commit verified dependency update
+      - name: Commit verified dependency update directly to main
         run: |
           if git diff --quiet -- package.json package-lock.json; then
             echo "No dependency changes required."
@@ -41,5 +46,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json
-          git commit -m "security: update Next.js and mail dependencies"
+          git commit -m "security: update web and mail dependencies"
           git push origin HEAD:main
