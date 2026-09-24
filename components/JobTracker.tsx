@@ -32,7 +32,10 @@ export default function JobTracker() {
   const [filter, setFilter] = useState('all')
 
   useEffect(() => {
-    setApps(JSON.parse(localStorage.getItem('job-applications') || '[]'))
+    const timer = window.setTimeout(() => {
+      setApps(JSON.parse(localStorage.getItem('job-applications') || '[]'))
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [])
 
   const save = (updated: Application[]) => {

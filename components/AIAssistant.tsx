@@ -15,8 +15,11 @@ export default function AIAssistant() {
   const endRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const saved = localStorage.getItem('ai-chat-history')
-    if (saved) setMessages(JSON.parse(saved))
+    const timer = window.setTimeout(() => {
+      const saved = localStorage.getItem('ai-chat-history')
+      if (saved) setMessages(JSON.parse(saved))
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [])
 
   useEffect(() => {

@@ -11,10 +11,13 @@ export default function DashboardHome({ onNavigate }: Props) {
   const [stats, setStats] = useState({ applications: 0, resumes: 0, lastTweak: '' })
 
   useEffect(() => {
-    const apps = JSON.parse(localStorage.getItem('job-applications') || '[]')
-    const history = JSON.parse(localStorage.getItem('resume-history') || '[]')
-    const lastTweak = history.length > 0 ? history[0].date : 'Never'
-    setStats({ applications: apps.length, resumes: history.length, lastTweak })
+    const timer = window.setTimeout(() => {
+      const apps = JSON.parse(localStorage.getItem('job-applications') || '[]')
+      const history = JSON.parse(localStorage.getItem('resume-history') || '[]')
+      const lastTweak = history.length > 0 ? history[0].date : 'Never'
+      setStats({ applications: apps.length, resumes: history.length, lastTweak })
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [])
 
   const quickActions = [

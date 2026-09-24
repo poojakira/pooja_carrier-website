@@ -26,10 +26,11 @@ export default function GithubActivity() {
   const [repos, setRepos] = useState<Repo[]>([])
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
+  const [now, setNow] = useState(0)
   const [tab, setTab] = useState<'events' | 'repos'>('events')
 
-  const fetchData = async () => {
-    setLoading(true)
+  const fetchData = async (refresh = false) => {
+    if (refresh) setLoading(true)
     try {
       const [repoRes, eventRes] = await Promise.all([
         fetch('https://api.github.com/users/poojakira/repos?sort=pushed&per_page=15'),
@@ -38,13 +39,17 @@ export default function GithubActivity() {
       if (repoRes.ok) setRepos(await repoRes.json())
       if (eventRes.ok) setEvents(await eventRes.json())
     } catch { /* silent */ }
+    setNow(Date.now())
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void fetchData() }, 0)
+    return () => window.clearTimeout(timer)
+  }, [])
 
   const formatDate = (d: string) => {
-    const diff = Date.now() - new Date(d).getTime()
+    const diff = now - new Date(d).getTime()
     const mins = Math.floor(diff / 60000)
     if (mins < 60) return `${mins}m ago`
     const hrs = Math.floor(mins / 60)
@@ -71,7 +76,7 @@ export default function GithubActivity() {
           <h1 className="text-xl font-bold text-white">GitHub Activity</h1>
           <p className="text-xs text-gray-400 mt-0.5">github.com/poojakira — recent activity & repos</p>
         </div>
-        <button onClick={fetchData} disabled={loading} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white border border-gray-700 transition-colors disabled:opacity-50">
+        <button onClick={() => void fetchData(true)} disabled={loading} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white border border-gray-700 transition-colors disabled:opacity-50">
           <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> Refresh
         </button>
       </div>

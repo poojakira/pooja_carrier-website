@@ -18,7 +18,10 @@ export default function ResumeHistory() {
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    setHistory(JSON.parse(localStorage.getItem('resume-history') || '[]'))
+    const timer = window.setTimeout(() => {
+      setHistory(JSON.parse(localStorage.getItem('resume-history') || '[]'))
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [])
 
   const filtered = history.filter(h =>
