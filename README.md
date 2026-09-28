@@ -4,6 +4,49 @@
 
 Career OS is a single-user, authenticated career workflow application for preparing evidence-constrained resume drafts, generating bounded PDFs, tracking application material, and delivering an approved draft to a configured inbox.
 
+## Overview
+
+Career OS is a single-user, authenticated (TypeScript/Next.js) career-workflow app: it prepares evidence-constrained resume drafts, generates bounded PDFs, tracks application material, and delivers an approved draft to one configured inbox. It is built around a strict security boundary — every page and privileged route requires a signed HttpOnly session — because it integrates AI, email, and PDF generation that must not be exposed as an anonymous public endpoint.
+
+## Verified Snapshot
+
+| Metric | Current result |
+|---|---:|
+| Stack | Next.js / TypeScript, single-user |
+| Auth | signed HttpOnly session; `CAREER_OS_ACCESS_KEY` + separate `CAREER_OS_SESSION_SECRET` (≥32 chars) |
+| Route protection | middleware + per-route session re-check on AI/email/PDF routes |
+| Output bounds | JSON body, PDF input/page/size, and OpenAI request deadlines all bounded |
+
+## Security Problem
+
+An app that wires together AI generation, SMTP email, and PDF rendering is a high-value target if left open: prompt/input abuse, arbitrary-recipient email, resource-exhaustion via unbounded PDFs, and session/credential leakage. Career OS treats itself as a **single-user authenticated** system with defense-in-depth so none of those routes are reachable anonymously or unbounded.
+
+## Threat Model & Scope
+
+**In scope:** authenticated single-user workflow with signed-session protection on every privileged route, bounded inputs/outputs, fixed email recipient, and HTML escaping.
+
+**Out of scope / not claimed:** It is explicitly **not** an anonymous public AI endpoint and not multi-tenant. Resume tailoring is an evidence-constrained draft that requires human approval — it is not an authoritative document generator. SMTP delivery is restricted to `NOTIFICATION_EMAIL`; callers cannot choose recipients.
+
+## Architecture
+
+```text
+Login (CAREER_OS_ACCESS_KEY)  -->  signed HttpOnly session (CAREER_OS_SESSION_SECRET)
+      |  middleware + per-route re-check
+      v
+AI draft (bounded, deadlined) --> evidence-constrained resume draft (human approval)
+      |
+      v
+Bounded PDF generation  |  SMTP delivery to fixed NOTIFICATION_EMAIL (escaped HTML)
+```
+
+## Core Capabilities
+
+- Signed HttpOnly session auth with separate access key and session secret (≥32 chars, env-supplied)
+- Per-route session re-check on AI, resume-tailoring, email, and PDF routes
+- Bounded JSON bodies, bounded PDF input/page-count/output size, deadlined OpenAI calls
+- Evidence-constrained resume drafts marked as requiring human approval
+- Fixed-recipient SMTP delivery with HTML escaping
+
 ## Production security boundary
 
 The application is not an anonymous public AI endpoint.
