@@ -7,11 +7,11 @@
 
 | ID | Severity | Finding | Status |
 |---|---|---|---|
-| PCW-001 | High | Middleware authenticates sessions but does not enforce same-origin unsafe API requests. | Open |
-| PCW-002 | High | Login/API surface has no general request-rate limiter. | Open |
-| PCW-003 | Medium | Security response headers/CSP are not set by middleware. | Open |
-| PCW-004 | Medium | No custom app/global/not-found failure screens exist. | Open |
-| PCW-005 | Medium | No critical runtime alert hook exists for provider/mail failures. | Open |
+| PCW-001 | High | Middleware now rejects foreign-origin unsafe API requests before protected route handling while preserving same-origin requests. | Fixed |
+| PCW-002 | High | Login and expensive AI/resume/PDF/email routes now enforce bounded per-client abuse budgets at the application layer. | Fixed |
+| PCW-003 | Medium | Middleware now applies nosniff, referrer, frame, permissions and CSP headers, plus HSTS in production. | Fixed |
+| PCW-004 | Medium | The app now includes loading, route error, global error, and not-found states with a recoverable retry path. | Fixed |
+| PCW-005 | Medium | No external alert provider is configured by repository evidence. Health/readiness endpoints and rollback guidance are present, but deployment-level alert delivery remains provider/infrastructure work. | External action required |
 | PCW-006 | Info | This is a single-owner access-key application with no multi-user database; UUID tenant isolation and password reset links are not part of its current identity model. | N/A |
 | PCW-007 | Info | Protected API routes use bounded JSON parsing and route-level session enforcement; mail HTML values are escaped. | Verified |
 
