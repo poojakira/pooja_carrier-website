@@ -44,3 +44,12 @@ Multi-user tenant UUID database isolation and SQL indexes because this repositor
 - **Status:** EXTERNAL ACTION REQUIRED
 - **Evidence:** The current CI build job failed before a runner was assigned (`runner_id: 0`) and executed zero steps. This is an external runner/startup condition, not verified evidence of an application defect.
 - This checkpoint is intentionally date-bounded. It does not claim zero vulnerabilities or universal production readiness.
+
+<!-- hardening-followup-20260930:start -->
+## Follow-up hardening — 2026-09-30
+
+- Current source verifies strict same-origin handling for unsafe API requests, route-level abuse limits on login and expensive provider routes, security headers, bounded request parsing, signed sessions, recoverable error/loading/not-found screens, and health/readiness endpoints.
+- The repository workflow-policy scanner was hardened on `main` to correctly validate nested GitHub Action paths and reject dangerous workflow triggers.
+- No provider credential is embedded for AI/SMTP integrations; operators must supply their own credentials through an ignored local `.env` or deployment secret store.
+- External alert-provider delivery and production rollback execution remain deployment responsibilities; the repository does not claim they were exercised by source inspection.
+<!-- hardening-followup-20260930:end -->
