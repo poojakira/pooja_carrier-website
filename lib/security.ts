@@ -4,6 +4,48 @@ import { NextRequest } from 'next/server'
 export const SESSION_COOKIE = 'career_os_session'
 const SESSION_TTL_SECONDS = 8 * 60 * 60
 
+type RateLimitEntry = { count: number; resetAt: number }
+const rateLimitBuckets = new Map<string, RateLimitEntry>()
+const MAX_RATE_LIMIT_BUCKETS = 2048
+
+function clientKey(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for')
+  const address = forwarded?.split(',')[0]?.trim() || request.headers.get('x-real-ip')?.trim()
+  return address || 'unknown'
+}
+
+export function enforceRateLimit(
+  request: NextRequest,
+  namespace: string,
+  limit: number,
+  windowMs: number,
+): void {
+  const now = Date.now()
+  const key = `${namespace}:${clientKey(request)}`
+  const existing = rateLimitBuckets.get(key)
+
+  if (!existing || existing.resetAt <= now) {
+    rateLimitBuckets.set(key, { count: 1, resetAt: now + windowMs })
+  } else {
+    if (existing.count >= limit) {
+      const error = new Error('Too many requests')
+      ;(error as Error & { status?: number }).status = 429
+      throw error
+    }
+    existing.count += 1
+  }
+
+  if (rateLimitBuckets.size > MAX_RATE_LIMIT_BUCKETS) {
+    for (const [bucketKey, entry] of rateLimitBuckets) {
+      if (entry.resetAt <= now) rateLimitBuckets.delete(bucketKey)
+    }
+  }
+}
+
+export function clearRateLimit(request: NextRequest, namespace: string): void {
+  rateLimitBuckets.delete(`${namespace}:${clientKey(request)}`)
+}
+
 function requiredSecret(name: 'CAREER_OS_ACCESS_KEY' | 'CAREER_OS_SESSION_SECRET'): string {
   const value = process.env[name] || ''
   if (value.length < 32) {
@@ -119,7 +161,7 @@ export async function readJsonBody<T>(
 export function publicErrorStatus(error: unknown): number {
   if (error instanceof Error) {
     const status = (error as Error & { status?: number }).status
-    if (status && [400, 401, 403, 413, 422].includes(status)) return status
+    if (status && [400, 401, 403, 413, 422, 429].includes(status)) return status
   }
   return 500
 }
