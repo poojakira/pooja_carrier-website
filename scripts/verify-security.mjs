@@ -28,6 +28,17 @@ if (!middleware.includes("path.startsWith('/api/')")) {
 if (!middleware.includes("SESSION_SECRET") && !middleware.includes('CAREER_OS_SESSION_SECRET')) {
   failures.push('middleware.ts: signed-session verification missing')
 }
+if (!middleware.includes("request.headers.get('origin')") || !middleware.includes('Cross-origin request rejected')) {
+  failures.push('middleware.ts: same-origin enforcement for unsafe API requests missing')
+}
+for (const header of ['X-Content-Type-Options', 'Referrer-Policy', 'Content-Security-Policy']) {
+  if (!middleware.includes(header)) failures.push(`middleware.ts: missing security header ${header}`)
+}
+
+const loginRoute = fs.readFileSync('app/api/auth/login/route.ts', 'utf8')
+if (!loginRoute.includes('enforceRateLimit(') || !loginRoute.includes('clearRateLimit(')) {
+  failures.push('login route: brute-force rate-limit contract missing')
+}
 
 const sendRoute = fs.readFileSync('app/api/send-resume/route.ts', 'utf8')
 if (!sendRoute.includes('escapeHtml')) {
