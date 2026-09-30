@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
+  enforceRateLimit,
   normalizeHttpUrl,
   publicErrorStatus,
   readJsonBody,
@@ -49,6 +50,7 @@ function safeText(value: unknown, max: number): string {
 export async function POST(request: NextRequest) {
   try {
     requireSession(request)
+    enforceRateLimit(request, 'resume-tweak', 20, 5 * 60 * 1000)
     const body = await readJsonBody<TweakRequest>(request, 160 * 1024)
     const jobDescription = safeText(body.jobDescription, 100_000)
     const rawJobLink = safeText(body.jobLink, 4_000)
