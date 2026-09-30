@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { publicErrorStatus, readJsonBody, requireSession } from '@/lib/security'
+import { enforceRateLimit, publicErrorStatus, readJsonBody, requireSession } from '@/lib/security'
 
 const SYSTEM_PROMPT = `You are Pooja Kiran Bharadwaj's personal career assistant.
 
@@ -53,6 +53,7 @@ function validateMessages(value: unknown): ChatMessage[] {
 export async function POST(request: NextRequest) {
   try {
     requireSession(request)
+    enforceRateLimit(request, 'ai-chat', 30, 5 * 60 * 1000)
     const body = await readJsonBody<{ messages?: unknown }>(request, 96 * 1024)
     const messages = validateMessages(body.messages)
     const apiKey = process.env.OPENAI_API_KEY
