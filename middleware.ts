@@ -1,6 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const COOKIE = 'career_os_session'
+const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+
+function withSecurityHeaders(response: NextResponse): NextResponse {
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'no-referrer')
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  response.headers.set(
+    'Content-Security-Policy',
+    "object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+  )
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  }
+  return response
+}
+
+function hasTrustedOrigin(request: NextRequest): boolean {
+  if (!UNSAFE_METHODS.has(request.method.toUpperCase())) return true
+  if (!request.nextUrl.pathname.startsWith('/api/')) return true
+
+  const origin = request.headers.get('origin')
+  if (!origin) return true
+
+  try {
+    return new URL(origin).origin === request.nextUrl.origin
+  } catch {
+    return false
+  }
+}
 
 function fromBase64Url(value: string): string {
   const normalized = value.replaceAll('-', '+').replaceAll('_', '/')
@@ -54,23 +84,32 @@ async function validSession(token: string | undefined): Promise<boolean> {
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
+
+  if (!hasTrustedOrigin(request)) {
+    return withSecurityHeaders(
+      NextResponse.json({ error: 'Cross-origin request rejected' }, { status: 403 }),
+    )
+  }
+
   const isPublic =
     path === '/login' ||
     path === '/api/auth/login' ||
     path === '/api/auth/logout'
 
-  if (isPublic) return NextResponse.next()
+  if (isPublic) return withSecurityHeaders(NextResponse.next())
 
   const token = request.cookies.get(COOKIE)?.value
-  if (await validSession(token)) return NextResponse.next()
+  if (await validSession(token)) return withSecurityHeaders(NextResponse.next())
 
   if (path.startsWith('/api/')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return withSecurityHeaders(
+      NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+    )
   }
 
   const login = new URL('/login', request.url)
   login.searchParams.set('next', path)
-  return NextResponse.redirect(login)
+  return withSecurityHeaders(NextResponse.redirect(login))
 }
 
 export const config = {
