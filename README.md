@@ -113,7 +113,7 @@ This repository intentionally implements a **single-user** trust model. It is no
 
 ## Stack
 
-Next.js 15, TypeScript, Tailwind CSS, pdf-lib, Nodemailer, and an optional OpenAI provider integration.
+Next.js 16.3.6, TypeScript, Tailwind CSS, pdf-lib, Nodemailer, and an optional OpenAI provider integration.
 
 <!-- repo-verification:start -->
 ## Verification update — 2026-09-30
