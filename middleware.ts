@@ -94,7 +94,9 @@ export async function middleware(request: NextRequest) {
   const isPublic =
     path === '/login' ||
     path === '/api/auth/login' ||
-    path === '/api/auth/logout'
+    path === '/api/auth/logout' ||
+    path === '/api/health' ||
+    path === '/api/ready'
 
   if (isPublic) return withSecurityHeaders(NextResponse.next())
 
