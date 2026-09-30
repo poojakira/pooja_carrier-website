@@ -62,7 +62,7 @@ for (const file of expensiveRoutes) {
   }
 }
 
-for (const file of ['app/error.tsx', 'app/not-found.tsx', 'app/loading.tsx']) {
+for (const file of ['app/error.tsx', 'app/global-error.tsx', 'app/not-found.tsx', 'app/loading.tsx']) {
   if (!fs.existsSync(file)) failures.push(`${file}: required failure/loading state missing`)
 }
 
