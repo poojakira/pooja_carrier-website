@@ -48,6 +48,28 @@ if (sendRoute.includes("|| 'pkiran1@asu.edu'")) {
   failures.push('send-resume: hard-coded recipient fallback is not allowed')
 }
 
+
+const expensiveRoutes = [
+  'app/api/ai-chat/route.ts',
+  'app/api/resume-tweak/route.ts',
+  'app/api/send-resume/route.ts',
+  'app/api/generate-pdf/route.ts',
+]
+for (const file of expensiveRoutes) {
+  const content = fs.readFileSync(file, 'utf8')
+  if (!content.includes('enforceRateLimit(')) {
+    failures.push(`${file}: missing route-level abuse rate limit`)
+  }
+}
+
+for (const file of ['app/error.tsx', 'app/not-found.tsx', 'app/loading.tsx']) {
+  if (!fs.existsSync(file)) failures.push(`${file}: required failure/loading state missing`)
+}
+
+for (const file of ['app/api/health/route.ts', 'app/api/ready/route.ts']) {
+  if (!fs.existsSync(file)) failures.push(`${file}: required health/readiness endpoint missing`)
+}
+
 if (failures.length) {
   console.error(failures.join('\n'))
   process.exit(1)
