@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 import {
+  enforceRateLimit,
   escapeHtml,
   normalizeHttpUrl,
   publicErrorStatus,
@@ -42,6 +43,7 @@ function boundedStringArray(value: unknown, maxItems: number, maxChars: number):
 export async function POST(request: NextRequest) {
   try {
     requireSession(request)
+    enforceRateLimit(request, 'send-resume', 10, 10 * 60 * 1000)
     const body = await readJsonBody<SendRequest>(request, 192 * 1024)
     if (!body.tweakedResume || typeof body.tweakedResume !== 'object') {
       return NextResponse.json({ error: 'No resume provided' }, { status: 400 })
