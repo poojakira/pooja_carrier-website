@@ -30,3 +30,14 @@ A release is promotable only when type check, route tests, dependency audit, and
 ## Change management
 
 Main is the supported integration branch. Production changes should be small, reviewable, tested, and tied to observable behavior. Historical benchmark/research material may remain for evidence, but active README, security, runbook, and deployment surfaces must describe the supported runtime rather than an academic or prototype status.
+
+## Health-gated promotion and rollback
+
+1. Build a candidate deployment without replacing the known-good deployment.
+2. Require `GET /api/health` to return HTTP 200 and `GET /api/ready` to return HTTP 200 before promotion.
+3. Run the repository security contract, lint, type check, dependency audit, and production build against the candidate revision.
+4. Promote traffic only after those checks pass. Keep the previous deployment addressable and unchanged during the validation window.
+5. If readiness fails or sustained application errors appear after promotion, route traffic back to the previous known-good deployment.
+6. Do not roll back persistent-data changes unless a separately tested rollback/migration path exists.
+
+External alert delivery is deployment-specific. This repository does not claim a configured monitoring provider; platform-level alerting for sustained 5xx/readiness failures remains an external operational requirement.
