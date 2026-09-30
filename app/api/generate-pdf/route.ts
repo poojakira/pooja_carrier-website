@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import {
+  enforceRateLimit,
   publicErrorStatus,
   readJsonBody,
   requireSession,
@@ -50,6 +51,7 @@ function fontSize(value: unknown, fallback: number, min: number, max: number): n
 export async function POST(request: NextRequest) {
   try {
     requireSession(request)
+    enforceRateLimit(request, 'generate-pdf', 30, 5 * 60 * 1000)
     const body = await readJsonBody<PdfRequest>(request, 128 * 1024)
     if (!body.tweakedResume || typeof body.tweakedResume !== 'object') {
       return NextResponse.json({ error: 'No resume provided' }, { status: 400 })
