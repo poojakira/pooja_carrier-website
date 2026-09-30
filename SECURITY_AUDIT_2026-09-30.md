@@ -27,3 +27,13 @@ Single-owner Next.js career assistant with signed session cookie, OpenAI API, SM
 
 ## Not applicable
 Multi-user tenant UUID database isolation and SQL indexes because this repository currently has no multi-user database.
+
+<!-- repo-verification:start -->
+## Verification update — 2026-09-30
+
+- **Scope:** Account-wide `poojakira` repository pass covering source/configuration, CI/release workflows, security-hygiene gates, dependency/SAST controls, and documentation consistency.
+- **Remediation:** Reviewed the Next.js career-assistant security/build workflow and existing authentication/provider safeguards.
+- **Verification state:** Hosted Actions is currently blocked before runner assignment: the latest build failure had zero executed steps, so npm audit, tests, lint, typecheck, and build did not actually run.
+- **Security note:** Re-run CI after hosted-runner/account availability returns; custom error/loading screens and critical-provider alerting remain documented hardening follow-ups.
+- **Evidence boundary:** This update records repository and GitHub Actions evidence observed during the pass. It is not a claim of independent penetration testing, production deployment, or zero residual risk.
+<!-- repo-verification:end -->
