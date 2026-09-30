@@ -37,3 +37,10 @@ Multi-user tenant UUID database isolation and SQL indexes because this repositor
 - **Security note:** Re-run CI after hosted-runner/account availability returns; custom error/loading screens and critical-provider alerting remain documented hardening follow-ups.
 - **Evidence boundary:** This update records repository and GitHub Actions evidence observed during the pass. It is not a claim of independent penetration testing, production deployment, or zero residual risk.
 <!-- repo-verification:end -->
+
+## Verification checkpoint — 2026-09-30
+
+- **Snapshot commit:** `2e607641c423af94f41faf7a9d124000a1a71669`
+- **Status:** EXTERNAL ACTION REQUIRED
+- **Evidence:** The current CI build job failed before a runner was assigned (`runner_id: 0`) and executed zero steps. This is an external runner/startup condition, not verified evidence of an application defect.
+- This checkpoint is intentionally date-bounded. It does not claim zero vulnerabilities or universal production readiness.
