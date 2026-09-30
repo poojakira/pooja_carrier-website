@@ -1,0 +1,29 @@
+# Security Audit — 2026-09-30
+
+## Scope
+Initial pre-remediation review of current `main`.
+
+## Runtime surface
+Single-owner Next.js career assistant with signed session cookie, OpenAI API, SMTP delivery, PDF generation, and resume processing.
+
+## Verified controls
+- API routes require a signed session.
+- Session/access secrets must be at least 32 characters.
+- API keys and SMTP credentials are loaded from environment variables.
+- JSON request bodies are bounded.
+- URL validation and HTML escaping exist on outbound mail.
+- AI requests have a timeout and generic provider failures.
+- A security verification script checks several route contracts.
+- No confirmed live API key was found in current `main`.
+
+## Findings to remediate/verify
+1. Add strict same-origin checks/security headers to middleware.
+2. Add rate limiting for login and expensive API routes.
+3. Add custom error/not-found/loading failure screens.
+4. Reduce session lifetime or document why 8 hours is required; password-reset flow is not present because this is access-key based.
+5. Add critical failure alerts for provider/SMTP/auth abuse.
+6. Add health/readiness endpoints and health-gated rollback/blue-green guidance.
+7. Keep user-provided resume/job content escaped in all HTML outputs and PDFs.
+
+## Not applicable
+Multi-user tenant UUID database isolation and SQL indexes because this repository currently has no multi-user database.
