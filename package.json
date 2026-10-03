@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "test": "node scripts/verify-security.mjs"
+    "test": "node scripts/verify-security.mjs",
+    "test:carrier-client": "tsx scripts/verify-carrier-client.ts"
   },
   "dependencies": {
     "framer-motion": "11.15.0",
@@ -30,6 +31,7 @@
     "eslint-config-next": "16.3.6",
     "postcss": "8.5.28",
     "tailwindcss": "3.4.16",
-    "typescript": "5.7.2"
+    "typescript": "5.7.2",
+    "tsx": "^4.20.3"
   }
 }
