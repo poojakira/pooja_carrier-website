@@ -17,6 +17,12 @@ Career OS is a single-user, authenticated (TypeScript/Next.js) career-workflow a
 | Route protection | middleware + per-route session re-check on AI/email/PDF routes |
 | Output bounds | JSON body, PDF input/page/size, and OpenAI request deadlines all bounded |
 
+## Deployment trust boundary
+
+The application is single-user by design. Rate limiting does **not** trust `X-Forwarded-For` or `X-Real-IP` by default because those headers are attacker-controlled on a direct deployment. Set `CAREER_OS_TRUST_PROXY=true` only when an operator-controlled reverse proxy overwrites forwarded client-address headers. Without that explicit opt-in, requests share a conservative direct-client rate-limit bucket.
+
+This repository is the authenticated Career OS interface/control plane. It does not independently claim employer-side ATS submission; the Carrier repository owns matching and application handoff workflow logic.
+
 ## Security Problem
 
 An app that wires together AI generation, SMTP email, and PDF rendering is a high-value target if left open: prompt/input abuse, arbitrary-recipient email, resource-exhaustion via unbounded PDFs, and session/credential leakage. Career OS treats itself as a **single-user authenticated** system with defense-in-depth so none of those routes are reachable anonymously or unbounded.
