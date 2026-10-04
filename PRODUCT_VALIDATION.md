@@ -31,3 +31,9 @@ Passing these gates demonstrates the single-user interface security contract at 
 ## Dependency audit boundary
 
 The release gate blocks high/critical advisories in production runtime dependencies using `npm audit --omit=dev --audit-level=high`. A full development-tool audit is also emitted. As of the current validation pass, runtime dependencies report zero high/critical advisories; high-severity findings remain in development/build glob tooling through `braces` (GHSA-vfj7-8cjw-p6xm), for which the npm registry currently exposes no patched `braces` release beyond the affected range. Critical development-tool advisories remain blocking. This distinction is explicit so dev-only findings are neither hidden nor misrepresented as runtime exposure.
+
+## Pilot integration: Carrier health contract
+
+Career OS can be configured with an operator-controlled `CARRIER_API_BASE_URL` and exposes an authenticated, rate-limited `/api/carrier-health` check. The client rejects credentials, query strings, fragments, non-HTTP(S) schemes, non-loopback plaintext HTTP in development, and all plaintext HTTP in production. Health fetches use a five-second timeout, disable caching, and reject redirects; the response must match the expected `{status: "ok", service: "carrier"}` contract.
+
+The base URL is trusted server configuration, not caller input. This check proves only that the configured Carrier health endpoint satisfies the expected transport and response contract. It does **not** prove application submission, provider interoperability, multi-user isolation, or Carrier production availability.
