@@ -82,7 +82,7 @@ async function validSession(token: string | undefined): Promise<boolean> {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   if (!hasTrustedOrigin(request)) {

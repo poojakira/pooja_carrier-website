@@ -21,18 +21,23 @@ for (const file of protectedRoutes) {
   }
 }
 
-const middleware = fs.readFileSync('middleware.ts', 'utf8')
-if (!middleware.includes("path.startsWith('/api/')")) {
-  failures.push('middleware.ts: API authentication boundary missing')
+const proxy = fs.readFileSync('proxy.ts', 'utf8')
+if (!proxy.includes("path.startsWith('/api/')")) {
+  failures.push('proxy.ts: API authentication boundary missing')
 }
-if (!middleware.includes("SESSION_SECRET") && !middleware.includes('CAREER_OS_SESSION_SECRET')) {
-  failures.push('middleware.ts: signed-session verification missing')
+if (!proxy.includes("SESSION_SECRET") && !proxy.includes('CAREER_OS_SESSION_SECRET')) {
+  failures.push('proxy.ts: signed-session verification missing')
 }
-if (!middleware.includes("request.headers.get('origin')") || !middleware.includes('Cross-origin request rejected')) {
-  failures.push('middleware.ts: same-origin enforcement for unsafe API requests missing')
+if (!proxy.includes("request.headers.get('origin')") || !proxy.includes('Cross-origin request rejected')) {
+  failures.push('proxy.ts: same-origin enforcement for unsafe API requests missing')
 }
 for (const header of ['X-Content-Type-Options', 'Referrer-Policy', 'Content-Security-Policy']) {
-  if (!middleware.includes(header)) failures.push(`middleware.ts: missing security header ${header}`)
+  if (!proxy.includes(header)) failures.push(`proxy.ts: missing security header ${header}`)
+}
+
+const securityLib = fs.readFileSync('lib/security.ts', 'utf8')
+if (!securityLib.includes("CAREER_OS_TRUST_PROXY !== 'true'")) {
+  failures.push('lib/security.ts: forwarded client IP headers must be opt-in behind a trusted proxy')
 }
 
 const loginRoute = fs.readFileSync('app/api/auth/login/route.ts', 'utf8')

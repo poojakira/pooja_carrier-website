@@ -9,9 +9,14 @@ const rateLimitBuckets = new Map<string, RateLimitEntry>()
 const MAX_RATE_LIMIT_BUCKETS = 2048
 
 function clientKey(request: NextRequest): string {
+  // Forwarded address headers are attacker-controlled unless a trusted reverse
+  // proxy overwrites them. Default to one conservative bucket for this
+  // single-user product; operators may opt in only behind a trusted proxy.
+  if (process.env.CAREER_OS_TRUST_PROXY !== 'true') return 'direct-client'
+
   const forwarded = request.headers.get('x-forwarded-for')
   const address = forwarded?.split(',')[0]?.trim() || request.headers.get('x-real-ip')?.trim()
-  return address || 'unknown'
+  return address || 'unknown-proxied-client'
 }
 
 export function enforceRateLimit(
