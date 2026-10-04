@@ -35,6 +35,11 @@ for (const header of ['X-Content-Type-Options', 'Referrer-Policy', 'Content-Secu
   if (!middleware.includes(header)) failures.push(`middleware.ts: missing security header ${header}`)
 }
 
+const securityLib = fs.readFileSync('lib/security.ts', 'utf8')
+if (!securityLib.includes("CAREER_OS_TRUST_PROXY !== 'true'")) {
+  failures.push('lib/security.ts: forwarded client IP headers must be opt-in behind a trusted proxy')
+}
+
 const loginRoute = fs.readFileSync('app/api/auth/login/route.ts', 'utf8')
 if (!loginRoute.includes('enforceRateLimit(') || !loginRoute.includes('clearRateLimit(')) {
   failures.push('login route: brute-force rate-limit contract missing')
