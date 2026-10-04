@@ -2,26 +2,27 @@
 
 ## Product boundary
 
-Career OS is a single-user authenticated workflow for evidence-constrained career drafts, bounded PDF generation, and delivery to one operator-configured inbox. It is not a public AI service, autonomous application submitter, or authoritative resume generator.
+Career OS is the authenticated single-user interface/control plane for resume drafting, bounded AI assistance, PDF generation, and fixed-recipient notification workflows. It is not a separate autonomous job-submission engine; Carrier owns job matching and application workflow logic.
 
 ## Real-world validation ladder
 
-1. Static security and product-contract checks on every privileged route.
-2. Build/type checks for the Next.js application.
-3. Route-level verification that AI, resume, email, and PDF operations re-check the signed session and enforce bounded request sizes and rate limits.
-4. Fixed-recipient email contract: the request cannot select the destination inbox.
-5. Bounded PDF contract: page and byte ceilings prevent unbounded document generation.
-6. External pilot with the owner reviewing generated drafts before any use or delivery.
+1. Static security-contract checks for route-level session enforcement, bounded JSON parsing, generic public errors, security headers, and abuse limits.
+2. Production build/type-check against the actual Next.js routes.
+3. Session-integrity and same-origin boundary checks.
+4. Fixed-recipient SMTP contract and escaped HTML verification.
+5. Trusted-proxy deployment contract: forwarded client-IP headers are ignored by default and may be enabled only behind an operator-controlled proxy that overwrites them.
+6. External pilot with the single intended user before any multi-user or public-service claim.
 
 ## Release gates
 
-- AI-generated career content must be marked for human approval.
-- Resume tailoring must be constrained to supplied evidence and must not invent employers, metrics, certifications, or deployment claims.
-- Privileged API routes must fail without a valid signed session.
-- Email recipients must come only from server configuration, never caller input.
-- PDF generation must enforce page and output-size ceilings.
-- Provider credentials must remain server-side environment configuration.
+- AI, email, PDF, and resume-tailoring routes require a valid signed session.
+- Request bodies are bounded before expensive processing.
+- Caller-controlled email recipients are not accepted.
+- Raw provider/server exception details are not returned to clients.
+- Rate limiting must not trust spoofable forwarded-address headers by default.
+- Resume drafts remain evidence-constrained and require human review.
+- This repository must not claim multi-tenant isolation or autonomous employer-side submission.
 
 ## Evidence boundary
 
-The automated verifier is a source-contract gate, not a browser penetration test or external provider certification. Passing it proves that required safeguards are present in the reviewed source revision; runtime deployment still requires secure secrets, HTTPS, and operator review.
+Passing these gates demonstrates the single-user interface security contract at the tested revision. It does not establish public SaaS readiness, employer ATS authorization, hiring outcomes, or multi-tenant security.
