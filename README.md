@@ -166,3 +166,8 @@ Local validation is the default. To guarantee zero cost, do not dispatch hosted 
 ## Carrier pilot integration
 
 Set server-side `CARRIER_API_BASE_URL` to the trusted Carrier service origin to enable the authenticated `/api/carrier-health` contract check. Production configuration requires HTTPS; development plaintext HTTP is restricted to loopback. The check is health-contract evidence only and does not perform job applications. See `PRODUCT_VALIDATION.md`.
+
+
+## Verification snapshot — 2026-10-03
+
+Clean validation completed with the **security contract verified**, **product contract verified**, TypeScript type checking and zero-warning lint successful, `npm audit --omit=dev` reporting **0 runtime vulnerabilities**, and a successful Next.js production build including `/api/carrier-health`.
