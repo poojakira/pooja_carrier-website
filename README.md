@@ -162,3 +162,7 @@ If a real credential is ever exposed, revoke or rotate it at the provider first,
 This private repository keeps GitHub Actions workflows on manual workflow dispatch only so ordinary pushes, pull requests, schedules, and tags do not consume hosted-runner minutes unexpectedly.
 
 Local validation is the default. To guarantee zero cost, do not dispatch hosted workflows unless the run is covered by a no-charge allowance or a self-hosted runner; no routine validation should provision cloud infrastructure, call paid external APIs, or publish containers/packages.
+
+## Carrier pilot integration
+
+Set server-side `CARRIER_API_BASE_URL` to the trusted Carrier service origin to enable the authenticated `/api/carrier-health` contract check. Production configuration requires HTTPS; development plaintext HTTP is restricted to loopback. The check is health-contract evidence only and does not perform job applications. See `PRODUCT_VALIDATION.md`.

@@ -40,6 +40,29 @@ if (!securityLib.includes("CAREER_OS_TRUST_PROXY !== 'true'")) {
   failures.push('lib/security.ts: forwarded client IP headers must be opt-in behind a trusted proxy')
 }
 
+const carrierRoute = fs.readFileSync('app/api/carrier-health/route.ts', 'utf8')
+if (!carrierRoute.includes('requireSession(request)')) {
+  failures.push('carrier-health route: missing signed-session enforcement')
+}
+if (!carrierRoute.includes("enforceRateLimit(request, 'carrier-health'")) {
+  failures.push('carrier-health route: missing dedicated abuse rate limit')
+}
+if (!carrierRoute.includes("'Cache-Control': 'no-store'")) {
+  failures.push('carrier-health route: response must disable caching')
+}
+
+const carrierClient = fs.readFileSync('lib/carrier-client.ts', 'utf8')
+for (const marker of [
+  'url.username || url.password || url.hash || url.search',
+  "production && url.protocol !== 'https:'",
+  "url.protocol === 'http:' && !isLoopback(url.hostname)",
+  "redirect: 'error'",
+  'AbortSignal.timeout(5_000)',
+  "data.status !== 'ok' || data.service !== 'carrier'",
+]) {
+  if (!carrierClient.includes(marker)) failures.push(`lib/carrier-client.ts: missing boundary marker ${marker}`)
+}
+
 const loginRoute = fs.readFileSync('app/api/auth/login/route.ts', 'utf8')
 if (!loginRoute.includes('enforceRateLimit(') || !loginRoute.includes('clearRateLimit(')) {
   failures.push('login route: brute-force rate-limit contract missing')
