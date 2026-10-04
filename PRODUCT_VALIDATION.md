@@ -26,3 +26,8 @@ Career OS is the authenticated single-user interface/control plane for resume dr
 ## Evidence boundary
 
 Passing these gates demonstrates the single-user interface security contract at the tested revision. It does not establish public SaaS readiness, employer ATS authorization, hiring outcomes, or multi-tenant security.
+
+
+## Dependency audit boundary
+
+The release gate blocks high/critical advisories in production runtime dependencies using `npm audit --omit=dev --audit-level=high`. A full development-tool audit is also emitted. As of the current validation pass, runtime dependencies report zero high/critical advisories; high-severity findings remain in development/build glob tooling through `braces` (GHSA-vfj7-8cjw-p6xm), for which the npm registry currently exposes no patched `braces` release beyond the affected range. Critical development-tool advisories remain blocking. This distinction is explicit so dev-only findings are neither hidden nor misrepresented as runtime exposure.
