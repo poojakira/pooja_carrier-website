@@ -253,7 +253,7 @@ async function fetchSmartRecruiters(company: string, maxJobs: number): Promise<B
         description: deepText(detail) || [job.name, location].filter(Boolean).join(" ")
       };
     }));
-    details.push(...resolved.filter((item): item is BaseJob => Boolean(item)));
+    details.push(...resolved.filter((item): item is NonNullable<typeof item> => item !== null));
   }
   return details;
 }
