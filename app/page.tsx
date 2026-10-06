@@ -14,8 +14,8 @@ export default function Home() {
     <main className="landing">
       <header className="landingNav">
         <Link href="/" className="brand">
-          <span className="brandMark">P</span>
-          <span>Pooja Career OS</span>
+          <span className="brandMark">C</span>
+          <span>Carrier OS</span>
         </Link>
         <div className="landingLinks">
           <a href="#how">How it works</a>
@@ -54,7 +54,7 @@ export default function Home() {
             </div>
             <div className="productBody">
               <aside className="miniSidebar">
-                <span className="miniBrand">P</span>
+                <span className="miniBrand">C</span>
                 <span className="miniActive">⌂</span>
                 <span>◎</span>
                 <span>▣</span>
@@ -131,11 +131,11 @@ export default function Home() {
           <h2>Make every application a deliberate one.</h2>
           <p>Start with the included demo data, then replace it with your own resume and job descriptions.</p>
         </div>
-        <Link className="button light" href="/workspace">Open Career OS</Link>
+        <Link className="button light" href="/workspace">Open Carrier OS</Link>
       </section>
 
       <footer className="landingFooter">
-        <span>Pooja Career OS · independent implementation</span>
+        <span>Carrier OS · independent implementation</span>
         <span>Human review required before any application is sent.</span>
       </footer>
     </main>

@@ -1,6 +1,6 @@
-# Pooja Career OS
+# Carrier OS
 
-Pooja Career OS is a human-in-the-loop career operations workspace for evaluating roles, improving resume readiness, preparing coherent application kits, organizing interview evidence, and learning from application outcomes.
+Carrier OS is a human-in-the-loop career operations workspace for evaluating roles, improving resume readiness, preparing coherent application kits, organizing interview evidence, and learning from application outcomes.
 
 The repository was rebuilt from scratch in October 2026. The product direction combines two useful ideas:
 

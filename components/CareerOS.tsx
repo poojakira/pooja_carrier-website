@@ -406,8 +406,8 @@ export function CareerOS() {
     <div className="workspace">
       <aside className="workspaceSidebar">
         <Link href="/" className="brand workspaceBrand">
-          <span className="brandMark">P</span>
-          <span>Pooja Career OS</span>
+          <span className="brandMark">C</span>
+          <span>Carrier OS</span>
         </Link>
 
         <nav className="workspaceNav" aria-label="Workspace">
@@ -444,8 +444,8 @@ export function CareerOS() {
       <main className="workspaceMain">
         <header className="workspaceTopbar">
           <div className="mobileBrand">
-            <span className="brandMark">P</span>
-            <strong>Career OS</strong>
+            <span className="brandMark">C</span>
+            <strong>Carrier OS</strong>
           </div>
           <div className="topbarSearch">⌕ <span>Search roles, companies, notes</span></div>
           <div className="topbarRight">
