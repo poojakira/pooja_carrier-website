@@ -1,99 +1,143 @@
-'use client'
+import Link from "next/link";
 
-import { useState } from 'react'
-import {
-  FileText, Briefcase, History, MessageSquare, Github,
-  ChevronLeft, ChevronRight, Zap
-} from 'lucide-react'
-import ResumeTweaker from '@/components/ResumeTweaker'
-import JobTracker from '@/components/JobTracker'
-import ResumeHistory from '@/components/ResumeHistory'
-import AIAssistant from '@/components/AIAssistant'
-import GithubActivity from '@/components/GithubActivity'
-import DashboardHome from '@/components/DashboardHome'
-
-const navItems = [
-  { id: 'home', label: 'Dashboard', icon: Zap },
-  { id: 'tweaker', label: 'Resume Tweaker', icon: FileText },
-  { id: 'tracker', label: 'Job Tracker', icon: Briefcase },
-  { id: 'history', label: 'Resume History', icon: History },
-  { id: 'assistant', label: 'AI Assistant', icon: MessageSquare },
-  { id: 'github', label: 'GitHub Activity', icon: Github },
-]
+const features = [
+  ["Readiness Read", "See ATS-style clarity, impact, completeness, and keyword signals before you tailor."],
+  ["Role Evaluation", "Score a posting against your actual evidence, including explicit requirements and work-authorization language."],
+  ["Application Kit", "Keep the tailored resume, cover-letter angle, follow-up, and recruiter message aligned to one story."],
+  ["Career Companion", "A workspace that remembers your profile, saved roles, applications, interview stories, and next actions."],
+  ["Pipeline Analytics", "Measure applications, responses, interviews, offers, and where your search is leaking momentum."],
+  ["Human in the loop", "The system prepares and recommends. You review, edit, and decide what gets sent."]
+];
 
 export default function Home() {
-  const [activePage, setActivePage] = useState('home')
-  const [collapsed, setCollapsed] = useState(false)
-
-  const renderPage = () => {
-    switch (activePage) {
-      case 'home': return <DashboardHome onNavigate={setActivePage} />
-      case 'tweaker': return <ResumeTweaker />
-      case 'tracker': return <JobTracker />
-      case 'history': return <ResumeHistory />
-      case 'assistant': return <AIAssistant />
-      case 'github': return <GithubActivity />
-      default: return <DashboardHome onNavigate={setActivePage} />
-    }
-  }
-
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
-      <aside className={`${collapsed ? 'w-16' : 'w-56'} flex-shrink-0 bg-[#151823] border-r border-gray-800 flex flex-col transition-all duration-200`}>
-        {/* Logo */}
-        <div className="h-14 flex items-center px-4 border-b border-gray-800">
-          {!collapsed && (
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-white" />
+    <main className="landing">
+      <header className="landingNav">
+        <Link href="/" className="brand">
+          <span className="brandMark">P</span>
+          <span>Pooja Career OS</span>
+        </Link>
+        <div className="landingLinks">
+          <a href="#how">How it works</a>
+          <a href="#features">Features</a>
+          <Link className="button secondary small" href="/workspace">Open workspace</Link>
+        </div>
+      </header>
+
+      <section className="hero">
+        <div className="heroGlow heroGlowOne" />
+        <div className="heroGlow heroGlowTwo" />
+        <div className="heroCopy">
+          <span className="heroBadge">Career search, run like an operating system</span>
+          <h1>Apply better to fewer roles. Keep the evidence. Keep the control.</h1>
+          <p>
+            A unified career workspace that combines ATS-style resume feedback, rigorous job evaluation,
+            application kits, interview preparation, and pipeline analytics without auto-submitting on your behalf.
+          </p>
+          <div className="heroActions">
+            <Link className="button primary" href="/workspace">Start with the workspace</Link>
+            <a className="button ghost" href="#how">See the workflow</a>
+          </div>
+          <div className="trustLine">
+            <span>Local-first prototype</span>
+            <span>No auto-apply</span>
+            <span>No fabricated experience</span>
+          </div>
+        </div>
+
+        <div className="heroProduct">
+          <div className="productWindow">
+            <div className="windowBar">
+              <div className="windowDots"><span /><span /><span /></div>
+              <span>Career command center</span>
+              <span className="livePill">Live</span>
+            </div>
+            <div className="productBody">
+              <aside className="miniSidebar">
+                <span className="miniBrand">P</span>
+                <span className="miniActive">⌂</span>
+                <span>◎</span>
+                <span>▣</span>
+                <span>◇</span>
+              </aside>
+              <div className="miniMain">
+                <div className="miniHeading">
+                  <div><small>GOOD EVENING</small><strong>Your search, prioritized.</strong></div>
+                  <span>+ Evaluate role</span>
+                </div>
+                <div className="miniStats">
+                  <div><small>Readiness</small><b>86</b><i>Strong baseline</i></div>
+                  <div><small>Best fit</small><b>94%</b><i>Application Security</i></div>
+                  <div><small>Pipeline</small><b>12</b><i>4 active</i></div>
+                </div>
+                <div className="miniPanel">
+                  <div className="miniPanelHead"><strong>Today</strong><span>3 high-value actions</span></div>
+                  <div className="miniTask"><em>1</em><span><b>Review top match</b><small>Application Security Engineer · Phoenix</small></span><strong>94%</strong></div>
+                  <div className="miniTask"><em>2</em><span><b>Strengthen resume impact</b><small>3 bullets need measurable outcomes</small></span><strong>Fix</strong></div>
+                  <div className="miniTask"><em>3</em><span><b>Interview story bank</b><small>Prepare one identity-security story</small></span><strong>Prep</strong></div>
+                </div>
               </div>
-              <span className="font-semibold text-sm text-white">Career OS</span>
             </div>
-          )}
-          {collapsed && (
-            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center mx-auto">
-              <Zap className="w-4 h-4 text-white" />
-            </div>
-          )}
+          </div>
         </div>
+      </section>
 
-        {/* Nav Items */}
-        <nav className="flex-1 py-3 px-2 space-y-1">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActivePage(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                activePage === item.id
-                  ? 'bg-indigo-600/15 text-indigo-400 font-medium'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
-              title={collapsed ? item.label : undefined}
-            >
-              <item.icon className="w-4.5 h-4.5 flex-shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-            </button>
+      <section className="proofStrip">
+        <span>Resume → fit → application → interview → offer</span>
+        <strong>One evidence-backed workflow.</strong>
+      </section>
+
+      <section className="howSection" id="how">
+        <div className="sectionIntro">
+          <span className="eyebrow">How it works</span>
+          <h2>One role in. One decision-quality packet out.</h2>
+          <p>The system is designed to help you decide where to invest time before it helps you write anything.</p>
+        </div>
+        <div className="steps">
+          {[
+            ["01", "Load your truth", "Keep a master resume and profile as the source of truth. The tool may sharpen wording, but it should never invent experience."],
+            ["02", "Evaluate before applying", "Read the posting, weight explicit requirements, flag work-authorization blockers, and surface legitimacy signals."],
+            ["03", "Build one coherent kit", "Tailor the resume, cover-letter angle, recruiter note, follow-up, and interview stories around the same evidence."],
+            ["04", "Track outcomes", "Move roles through the pipeline and learn from response rates, interviews, rejections, and offers."]
+          ].map(([n, title, text]) => (
+            <article className="stepCard" key={n}>
+              <span>{n}</span>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </article>
           ))}
-        </nav>
-
-        {/* Collapse Toggle */}
-        <div className="p-2 border-t border-gray-800">
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="w-full flex items-center justify-center py-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
-          >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
         </div>
-      </aside>
+      </section>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-6 max-w-6xl mx-auto">
-          {renderPage()}
+      <section className="featureSection" id="features">
+        <div className="sectionIntro">
+          <span className="eyebrow">A complete career operating layer</span>
+          <h2>Polished enough to use daily. Rigorous enough to trust.</h2>
         </div>
-      </main>
-    </div>
-  )
+        <div className="featureGrid">
+          {features.map(([title, text]) => (
+            <article className="featureCard" key={title}>
+              <span className="featureIcon">✦</span>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="ctaSection">
+        <div>
+          <span className="eyebrow">Your side, never on your behalf</span>
+          <h2>Make every application a deliberate one.</h2>
+          <p>Start with the included demo data, then replace it with your own resume and job descriptions.</p>
+        </div>
+        <Link className="button light" href="/workspace">Open Career OS</Link>
+      </section>
+
+      <footer className="landingFooter">
+        <span>Pooja Career OS · independent implementation</span>
+        <span>Human review required before any application is sent.</span>
+      </footer>
+    </main>
+  );
 }
