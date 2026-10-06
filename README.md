@@ -23,7 +23,8 @@ The first fresh build includes:
 - a posting-based visa sponsorship percentage with confidence and evidence;
 - an estimated role-chance percentage with transparent factors and an explicit uncertainty disclaimer;
 - conservative posting-legitimacy observations;
-- a demo job discovery catalog;
+- live public employer-board ingestion for supported Greenhouse and Lever career sites, with server-side host allowlisting, source timestamps, official apply links, resume fit, role-chance estimates, and sponsorship signals;
+- a demo job discovery catalog as an offline/fallback path;
 - application-kit planning for resume, cover letter, recruiter note, and follow-up;
 - a human-review gate that never auto-submits;
 - a local application pipeline with Saved, Applied, Interview, Offer, and Rejected states;
@@ -90,7 +91,7 @@ See THIRD_PARTY_NOTICES.md for details.
 The recommended next layer is:
 
 - real authentication and encrypted profile storage;
-- live job feeds from employer ATS sources;
+- expand live job feeds beyond the current Greenhouse and Lever adapters to additional employer ATS sources;
 - role freshness and canonical employer-link verification;
 - recruiter and hiring-manager research;
 - document upload and parsing;

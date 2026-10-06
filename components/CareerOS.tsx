@@ -16,6 +16,28 @@ type TrackedRole = {
   fit: number;
   status: Status;
   sponsor: string;
+  applyUrl?: string;
+  source?: string;
+};
+
+type LiveJob = {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  source: "greenhouse" | "lever";
+  sourceLabel: string;
+  sourceUrl: string;
+  applyUrl: string;
+  updatedAt?: string;
+  description: string;
+  fit: number;
+  roleChance: number;
+  roleConfidence: "low" | "medium" | "high";
+  sponsorshipChance: number;
+  sponsorshipLabel: string;
+  sponsorshipConfidence: "low" | "medium" | "high";
+  verdict: string;
 };
 
 const nav: { id: View; label: string; icon: string }[] = [
@@ -51,6 +73,11 @@ export function CareerOS() {
   const [target, setTarget] = useState("Security Engineer · AI Security · Application Security");
   const [location, setLocation] = useState("United States");
   const [workAuthMode, setWorkAuthMode] = useState<"future-sponsorship" | "no-sponsorship-needed" | "unknown">("future-sponsorship");
+  const [liveSource, setLiveSource] = useState("");
+  const [liveJobs, setLiveJobs] = useState<LiveJob[]>([]);
+  const [liveLoading, setLiveLoading] = useState(false);
+  const [liveError, setLiveError] = useState("");
+  const [liveFetchedAt, setLiveFetchedAt] = useState("");
   const [savedFlash, setSavedFlash] = useState("");
 
   useEffect(() => {
@@ -95,6 +122,59 @@ export function CareerOS() {
   function persistTracker(next: TrackedRole[]) {
     setTracker(next);
     localStorage.setItem("pcos-tracker", JSON.stringify(next));
+  }
+
+  function saveLiveJob(job: LiveJob) {
+    if (tracker.some((item) => item.id === job.id)) {
+      setSavedFlash("Already in pipeline");
+      window.setTimeout(() => setSavedFlash(""), 1300);
+      return;
+    }
+    persistTracker([
+      ...tracker,
+      {
+        id: job.id,
+        title: job.title,
+        company: job.company,
+        location: job.location,
+        fit: job.fit,
+        status: "Saved",
+        sponsor: job.sponsorshipLabel,
+        applyUrl: job.applyUrl,
+        source: job.sourceLabel
+      }
+    ]);
+    setSavedFlash("Live role saved");
+    window.setTimeout(() => setSavedFlash(""), 1300);
+  }
+
+  async function loadLiveBoard() {
+    setLiveLoading(true);
+    setLiveError("");
+    try {
+      const response = await fetch("/api/live-jobs", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          source: liveSource,
+          resume,
+          needsSponsorship: workAuthMode === "future-sponsorship"
+        })
+      });
+      const data = await response.json() as { jobs?: LiveJob[]; error?: string; fetchedAt?: string };
+      if (!response.ok || data.error) {
+        setLiveJobs([]);
+        setLiveError(data.error || "Could not load this live board.");
+        return;
+      }
+      setLiveJobs(data.jobs || []);
+      setLiveFetchedAt(data.fetchedAt || new Date().toISOString());
+    } catch {
+      setLiveJobs([]);
+      setLiveError("Live board request failed.");
+    } finally {
+      setLiveLoading(false);
+    }
   }
 
   function saveDemoJob(job: (typeof demoJobs)[number]) {
@@ -652,42 +732,109 @@ export function CareerOS() {
             <section className="viewStack">
               <div className="pageHeading splitHeading">
                 <div>
-                  <span className="eyebrow">Explore</span>
-                  <h1>Fewer roles. Better reasons.</h1>
-                  <p>This build ships with a demo catalog so the full flow works without paid data providers.</p>
+                  <span className="eyebrow">Live Explore</span>
+                  <h1>Pull real employer jobs into your workspace.</h1>
+                  <p>
+                    Paste a public Greenhouse or Lever careers URL. Career OS fetches the live board, ranks roles
+                    against your resume, shows estimated role chance and sponsorship signal, and preserves the official apply link.
+                  </p>
                 </div>
-                <span className="subtlePill">Demo data · replace with live provider later</span>
+                <span className="subtlePill">Live source · no paid feed required</span>
               </div>
+
+              <article className="panel liveImporter">
+                <div className="liveImporterTop">
+                  <div>
+                    <span className="eyebrow">Employer board</span>
+                    <h2>Supported now: Greenhouse + Lever</h2>
+                  </div>
+                  <span className="privacyPill">Server-side fetch · restricted hosts</span>
+                </div>
+                <div className="liveSourceRow">
+                  <input
+                    value={liveSource}
+                    onChange={(event) => setLiveSource(event.target.value)}
+                    placeholder="https://boards.greenhouse.io/company or https://jobs.lever.co/company"
+                  />
+                  <button className="button primary" onClick={loadLiveBoard} disabled={liveLoading || !liveSource.trim()}>
+                    {liveLoading ? "Loading live board..." : "Load live jobs"}
+                  </button>
+                </div>
+                <div className="liveExamples">
+                  <span>Career OS accepts only supported public ATS hosts; arbitrary URLs are rejected.</span>
+                  {liveFetchedAt && <strong>Last fetched: {new Date(liveFetchedAt).toLocaleString()}</strong>}
+                </div>
+                {liveError && <div className="inlineError">{liveError}</div>}
+              </article>
 
               <div className="filterBar">
+                <span>Live source first</span>
                 <span>High fit first</span>
-                <span>On-site + hybrid</span>
-                <span>Early career</span>
-                <span>Sponsorship signal visible</span>
+                <span>Role chance visible</span>
+                <span>Visa signal visible</span>
+                <span>Official apply link</span>
               </div>
 
-              <div className="jobList">
-                {demoJobs.map((job) => (
-                  <article className="jobCard" key={job.id}>
-                    <div className="jobCompanyMark">{job.company[0]}</div>
-                    <div className="jobContent">
-                      <span className="muted">{job.company}</span>
-                      <h2>{job.title}</h2>
-                      <div className="jobMeta">
-                        <span>{job.location}</span><span>{job.mode}</span><span>{job.salary}</span>
+              {liveJobs.length > 0 ? (
+                <div className="jobList">
+                  {liveJobs.map((job) => (
+                    <article className="jobCard liveJobCard" key={job.id}>
+                      <div className="jobCompanyMark">{job.company[0]?.toUpperCase() || "J"}</div>
+                      <div className="jobContent">
+                        <span className="muted">{job.company} · {job.sourceLabel}</span>
+                        <h2>{job.title}</h2>
+                        <div className="jobMeta">
+                          <span>{job.location}</span>
+                          <span>{job.verdict}</span>
+                          {job.updatedAt && <span>Source timestamp: {new Date(job.updatedAt).toLocaleDateString()}</span>}
+                        </div>
+                        <div className="liveSignals">
+                          <span><b>{job.fit}%</b> fit</span>
+                          <span><b>{job.roleChance}%</b> role chance · {job.roleConfidence}</span>
+                          <span><b>{job.sponsorshipChance}%</b> visa · {job.sponsorshipLabel}</span>
+                        </div>
                       </div>
-                      <div className="tagRow">{job.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
-                    </div>
-                    <div className="jobRight">
-                      <div className="fitBadge"><strong>{job.fit}%</strong><span>fit</span></div>
-                      <small>Sponsorship: {job.sponsor}</small>
-                      <button className="button secondary small" onClick={() => saveDemoJob(job)}>
-                        {tracker.some((item) => item.id === job.id) ? "In pipeline" : "Save role"}
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
+                      <div className="jobRight">
+                        <a className="button primary small" href={job.applyUrl} target="_blank" rel="noreferrer">Open official job</a>
+                        <button className="button secondary small" onClick={() => saveLiveJob(job)}>
+                          {tracker.some((item) => item.id === job.id) ? "In pipeline" : "Save role"}
+                        </button>
+                        <small>{job.sourceLabel} live feed</small>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="demoDivider">
+                    <span />
+                    <strong>Demo catalog fallback</strong>
+                    <span />
+                  </div>
+                  <div className="jobList">
+                    {demoJobs.map((job) => (
+                      <article className="jobCard" key={job.id}>
+                        <div className="jobCompanyMark">{job.company[0]}</div>
+                        <div className="jobContent">
+                          <span className="muted">{job.company}</span>
+                          <h2>{job.title}</h2>
+                          <div className="jobMeta">
+                            <span>{job.location}</span><span>{job.mode}</span><span>{job.salary}</span>
+                          </div>
+                          <div className="tagRow">{job.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
+                        </div>
+                        <div className="jobRight">
+                          <div className="fitBadge"><strong>{job.fit}%</strong><span>fit</span></div>
+                          <small>Sponsorship: {job.sponsor}</small>
+                          <button className="button secondary small" onClick={() => saveDemoJob(job)}>
+                            {tracker.some((item) => item.id === job.id) ? "In pipeline" : "Save role"}
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </>
+              )}
             </section>
           )}
 
@@ -799,6 +946,7 @@ export function CareerOS() {
                             <select value={item.status} onChange={(event) => updateStatus(item.id, event.target.value as Status)}>
                               {(["Saved", "Applied", "Interview", "Offer", "Rejected"] as Status[]).map((option) => <option key={option}>{option}</option>)}
                             </select>
+                            {item.applyUrl && <a className="textButton" href={item.applyUrl} target="_blank" rel="noreferrer">Official job</a>}
                             <button className="textButton" onClick={() => removeRole(item.id)}>Remove</button>
                           </article>
                         ))}

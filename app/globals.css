@@ -1019,3 +1019,86 @@ h1, h2, h3, p { margin-top: 0; }
   .evaluationScoreGrid { grid-template-columns: 1fr; }
   .estimateColumns { grid-template-columns: 1fr; }
 }
+
+
+/* Live employer-board ingestion */
+.liveImporter { display: grid; gap: 15px; }
+.liveImporterTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.liveImporterTop h2 { margin: 7px 0 0; }
+.liveSourceRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+.liveSourceRow input {
+  min-height: 44px;
+  border: 1px solid #dfe3ec;
+  background: #fbfbfd;
+  border-radius: 11px;
+  padding: 0 13px;
+  color: #364056;
+  outline: none;
+}
+.liveSourceRow input:focus {
+  border-color: #ac9cff;
+  box-shadow: 0 0 0 3px #f0edff;
+}
+.liveExamples {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: #929aac;
+  font-size: 9px;
+}
+.liveExamples strong { color: #5f687d; }
+.inlineError {
+  border: 1px solid #f0cbd2;
+  background: #fff2f4;
+  color: #a54658;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 10px;
+  line-height: 1.45;
+}
+.liveSignals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+.liveSignals span {
+  border: 1px solid #e4e6ee;
+  background: #f9f9fc;
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: #707a8f;
+  font-size: 9px;
+}
+.liveSignals b { color: #4e3dd1; }
+.liveJobCard { border-color: #ded9f7; }
+.demoDivider {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+  color: #969eae;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+}
+.demoDivider span { height: 1px; background: #e6e9ef; }
+.demoDivider strong { font-size: 9px; }
+.pipelineCard .textButton {
+  display: inline-block;
+  margin-right: 10px;
+}
+@media (max-width: 700px) {
+  .liveImporterTop { flex-direction: column; }
+  .liveSourceRow { grid-template-columns: 1fr; }
+  .liveExamples { flex-direction: column; }
+}
