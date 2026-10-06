@@ -820,3 +820,131 @@ h1, h2, h3, p { margin-top: 0; }
   .inlineActions { flex-direction: column; }
   .kitProgress { justify-content: flex-start; }
 }
+
+
+/* Resume Tweaker */
+.tweakerControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.tweakerControls h2 { margin: 7px 0 0; }
+.modeTabs { display: flex; flex-wrap: wrap; gap: 7px; }
+.modeTab {
+  border: 1px solid #e1e4ec;
+  background: #fff;
+  color: #687287;
+  border-radius: 10px;
+  padding: 8px 11px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 750;
+}
+.modeTab.active {
+  color: #5d46dc;
+  background: #f0edff;
+  border-color: #d8d0ff;
+}
+.tweakerGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.tweakEditor {
+  width: 100%;
+  min-height: 430px;
+  resize: vertical;
+  border: 1px solid #e1e4ec;
+  border-radius: 13px;
+  background: #fbfbfd;
+  color: #2d364b;
+  padding: 16px;
+  line-height: 1.6;
+  outline: none;
+}
+.tweakEditor:focus {
+  border-color: #ac9cff;
+  box-shadow: 0 0 0 3px #f0edff;
+}
+.tweakerRun {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.tweakerRun > div { display: grid; gap: 4px; }
+.tweakerRun strong { font-size: 12px; }
+.tweakerRun span { color: #7b8497; font-size: 10px; }
+.tweakScoreGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 13px;
+}
+.tweakerResultGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(330px, 0.75fr);
+  gap: 16px;
+  align-items: start;
+}
+.resumePreview {
+  white-space: pre-wrap;
+  margin: 0;
+  padding: 17px;
+  border: 1px solid #e8eaf0;
+  border-radius: 13px;
+  background: #fbfbfd;
+  color: #313b50;
+  line-height: 1.62;
+  font-family: inherit;
+  font-size: 11px;
+}
+.tweakAudit {
+  position: sticky;
+  top: 90px;
+  max-height: 760px;
+  overflow: auto;
+}
+.changeList { display: grid; margin-top: 17px; }
+.changeItem {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 10px;
+  padding: 13px 0;
+  border-top: 1px solid #edf0f4;
+}
+.changeItem > span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #f0edff;
+  color: #654ce5;
+  font-size: 9px;
+  font-weight: 850;
+}
+.changeItem > div { display: grid; gap: 5px; }
+.changeItem strong { font-size: 10px; }
+.changeItem small {
+  color: #9aa2b2;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 8px;
+  margin-top: 4px;
+}
+.changeItem p {
+  margin: 0;
+  color: #667087;
+  font-size: 10px;
+  line-height: 1.5;
+}
+@media (max-width: 1100px) {
+  .tweakerGrid, .tweakerResultGrid { grid-template-columns: 1fr; }
+  .tweakAudit { position: static; max-height: none; }
+  .tweakScoreGrid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 580px) {
+  .tweakerControls, .tweakerRun { align-items: stretch; flex-direction: column; }
+  .tweakScoreGrid { grid-template-columns: 1fr; }
+}

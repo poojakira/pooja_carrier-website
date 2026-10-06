@@ -15,6 +15,7 @@ The first fresh build includes:
 
 - a polished public landing page;
 - local-first master resume editing;
+- an evidence-locked Resume Tweaker with job-specific rewriting, ATS alignment, impact/concise modes, protected-fact checks, exact before/after edits, and unresolved-gap warnings;
 - deterministic readiness scoring across completeness, impact, clarity, and keyword breadth;
 - job-description evaluation with evidence overlap;
 - explicit-requirement extraction and weighting;

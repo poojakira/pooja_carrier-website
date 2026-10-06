@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { atsReadiness, type Evaluation } from "@/lib/engine";
 import { demoJob, demoJobs, demoResume, starterStories } from "@/lib/demo";
 
-type View = "today" | "resume" | "evaluate" | "explore" | "kit" | "tracker" | "interview" | "analytics" | "profile";
+type View = "today" | "resume" | "tweaker" | "evaluate" | "explore" | "kit" | "tracker" | "interview" | "analytics" | "profile";
 type Status = "Saved" | "Applied" | "Interview" | "Offer" | "Rejected";
 
 type TrackedRole = {
@@ -23,6 +23,7 @@ const nav: { id: View; label: string; icon: string }[] = [
   { id: "explore", label: "Explore", icon: "◎" },
   { id: "evaluate", label: "Evaluate role", icon: "✦" },
   { id: "resume", label: "Resume lab", icon: "▤" },
+  { id: "tweaker", label: "Resume Tweaker", icon: "✎" },
   { id: "kit", label: "Application kit", icon: "◇" },
   { id: "tracker", label: "Pipeline", icon: "▦" },
   { id: "interview", label: "Interview prep", icon: "◌" },
@@ -42,6 +43,9 @@ export function CareerOS() {
   const [jd, setJd] = useState(demoJob);
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [evaluating, setEvaluating] = useState(false);
+  const [tweakResult, setTweakResult] = useState<any | null>(null);
+  const [tweaking, setTweaking] = useState(false);
+  const [tweakMode, setTweakMode] = useState<"balanced" | "ats" | "concise" | "impact">("balanced");
   const [tracker, setTracker] = useState<TrackedRole[]>([]);
   const [profileName, setProfileName] = useState("Pooja Kiran");
   const [target, setTarget] = useState("Security Engineer · AI Security · Application Security");
@@ -119,6 +123,28 @@ export function CareerOS() {
 
   function removeRole(id: string) {
     persistTracker(tracker.filter((item) => item.id !== id));
+  }
+
+  async function runTweaker() {
+    setTweaking(true);
+    try {
+      const response = await fetch("/api/tweak-resume", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ resume, jd, mode: tweakMode })
+      });
+      const data = await response.json();
+      if (data.result) setTweakResult(data.result);
+    } finally {
+      setTweaking(false);
+    }
+  }
+
+  function applyTweakedResume() {
+    if (!tweakResult?.rewrittenResume) return;
+    persistResume(tweakResult.rewrittenResume);
+    setSavedFlash("Tweaked resume applied");
+    window.setTimeout(() => setSavedFlash(""), 1400);
   }
 
   async function runEvaluation() {
@@ -296,6 +322,141 @@ export function CareerOS() {
                   ))}
                 </div>
               </article>
+            </section>
+          )}
+
+          {view === "tweaker" && (
+            <section className="viewStack">
+              <div className="pageHeading splitHeading">
+                <div>
+                  <span className="eyebrow">Resume Tweaker</span>
+                  <h1>Tailor aggressively. Fabricate nothing.</h1>
+                  <p>
+                    This mode rewrites only from evidence already present in your master resume, aligns truthful wording
+                    to the job description, preserves numbers, and shows every important change before you apply it.
+                  </p>
+                </div>
+                <span className="subtlePill">Evidence-locked rewriting</span>
+              </div>
+
+              <div className="tweakerControls panel">
+                <div>
+                  <span className="eyebrow">Optimization mode</span>
+                  <h2>Choose what to prioritize</h2>
+                </div>
+                <div className="modeTabs">
+                  {([
+                    ["balanced", "Balanced"],
+                    ["ats", "ATS alignment"],
+                    ["impact", "Impact"],
+                    ["concise", "Concise"]
+                  ] as const).map(([id, label]) => (
+                    <button
+                      type="button"
+                      key={id}
+                      className={tweakMode === id ? "modeTab active" : "modeTab"}
+                      onClick={() => setTweakMode(id)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="tweakerGrid">
+                <article className="panel">
+                  <div className="panelHead">
+                    <div>
+                      <span className="eyebrow">Source resume</span>
+                      <h2>Your verified evidence</h2>
+                    </div>
+                    <span className="subtlePill">{resume.split(/\s+/).filter(Boolean).length} words</span>
+                  </div>
+                  <textarea className="tweakEditor" value={resume} onChange={(event) => persistResume(event.target.value)} />
+                </article>
+
+                <article className="panel">
+                  <div className="panelHead">
+                    <div>
+                      <span className="eyebrow">Target job</span>
+                      <h2>What the role actually asks for</h2>
+                    </div>
+                    <button className="button ghost small" onClick={() => setJd(demoJob)}>Load demo</button>
+                  </div>
+                  <textarea className="tweakEditor" value={jd} onChange={(event) => setJd(event.target.value)} />
+                </article>
+              </div>
+
+              <div className="tweakerRun panel">
+                <div>
+                  <strong>Evidence lock is on.</strong>
+                  <span>Numbers, employers, dates, technologies, and achievements are never invented.</span>
+                </div>
+                <button className="button primary" onClick={runTweaker} disabled={tweaking || resume.length < 80 || jd.length < 100}>
+                  {tweaking ? "Building evidence-safe rewrite..." : "Generate excellent tailored resume"}
+                </button>
+              </div>
+
+              {tweakResult && (
+                <div className="viewStack">
+                  <div className="tweakScoreGrid">
+                    <article className="metricCard"><span>Before fit</span><strong>{tweakResult.beforeScore}</strong><small>Job-language overlap</small></article>
+                    <article className="metricCard accentMetric"><span>After fit</span><strong>{tweakResult.afterScore}</strong><small>Evidence-safe alignment</small></article>
+                    <article className="metricCard"><span>Evidence integrity</span><strong>{tweakResult.integrityScore}%</strong><small>No invented claims</small></article>
+                    <article className="metricCard"><span>Edits proposed</span><strong>{tweakResult.changes.length}</strong><small>Reviewable changes</small></article>
+                  </div>
+
+                  <div className="tweakerResultGrid">
+                    <article className="panel">
+                      <div className="panelHead">
+                        <div>
+                          <span className="eyebrow">Tailored version</span>
+                          <h2>Recruiter-ready draft</h2>
+                        </div>
+                        <button className="button primary small" onClick={applyTweakedResume}>Use as master resume</button>
+                      </div>
+                      <pre className="resumePreview">{tweakResult.rewrittenResume}</pre>
+                    </article>
+
+                    <aside className="panel tweakAudit">
+                      <span className="eyebrow">Change audit</span>
+                      <h2>Why each change was made</h2>
+                      <div className="changeList">
+                        {tweakResult.changes.map((change: any, index: number) => (
+                          <div className="changeItem" key={index}>
+                            <span>{index + 1}</span>
+                            <div>
+                              <strong>{change.reason}</strong>
+                              <small>Before</small>
+                              <p>{change.before}</p>
+                              <small>After</small>
+                              <p>{change.after}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </aside>
+                  </div>
+
+                  <div className="threeCol">
+                    <article className="panel compactPanel">
+                      <span className="eyebrow">Keywords earned</span>
+                      <h3>Truthful alignment added</h3>
+                      <div className="tagRow">{tweakResult.addedKeywords.map((item: string) => <span key={item}>{item}</span>)}</div>
+                    </article>
+                    <article className="panel compactPanel">
+                      <span className="eyebrow">Protected facts</span>
+                      <h3>Preserved from source</h3>
+                      <div className="checkList">{tweakResult.protectedFacts.map((item: string) => <span key={item}>✓ {item}</span>)}</div>
+                    </article>
+                    <article className="panel compactPanel">
+                      <span className="eyebrow">Remaining gaps</span>
+                      <h3>Do not fake these</h3>
+                      <div className="checkList warnList">{tweakResult.unresolvedGaps.map((item: string) => <span key={item}>• {item}</span>)}</div>
+                    </article>
+                  </div>
+                </div>
+              )}
             </section>
           )}
 
