@@ -23,12 +23,17 @@ The first fresh build includes:
 - a posting-based visa sponsorship percentage with confidence and evidence;
 - an estimated role-chance percentage with transparent factors and an explicit uncertainty disclaimer;
 - conservative posting-legitimacy observations;
-- live public employer-board ingestion for supported Greenhouse and Lever career sites, with server-side host allowlisting, source timestamps, official apply links, resume fit, role-chance estimates, and sponsorship signals;
+- live public employer-board ingestion for Greenhouse, Lever, Ashby, SmartRecruiters, and supported public Workday career sites, with server-side host allowlisting, source timestamps, official apply links, resume fit, role-chance estimates, and sponsorship signals;
 - a demo job discovery catalog as an offline/fallback path;
 - application-kit planning for resume, cover letter, recruiter note, and follow-up;
 - a human-review gate that never auto-submits;
 - a local application pipeline with Saved, Applied, Interview, Offer, and Rejected states;
 - a premium-style review gate: live roles must be explicitly reviewed before they can be marked Applied/Interview/Offer;
+- a visible lifecycle rail: Resume → Understood → Matched → Tailored → ATS Recheck → PDF Ready → User Applies → Tracked → Updates;
+- user-selected role targeting: one role or comma-separated target roles drive live discovery and matching;
+- an ATS Robot recheck gate that blocks PDF generation when evidence integrity, alignment, structure, readability, or stuffing checks fail;
+- server-side PDF generation that independently re-runs the ATS gate before releasing the file;
+- a two-pass bulk-scan API that accepts up to 10,000 jobs per batch for dedupe, user-role filtering, fit scoring, sponsorship analysis, and prioritization;
 - an application audit trail that distinguishes saved, reviewed, official-application opened, user-confirmed status changes, and removed events;
 - a STAR plus Reflection interview story bank;
 - pipeline analytics and funnel interpretation;
@@ -76,7 +81,7 @@ The resume-tailoring engine is profession-agnostic: it derives role language fro
 
 This prototype stores editable user state in browser localStorage. That makes the current build easy to run and inspect, but it is not the same as an encrypted production data layer. Do not treat the prototype as a production vault for highly sensitive information.
 
-The application never auto-submits jobs and never sends messages. Drafting surfaces are review-only. Opening an employer application URL is logged separately from a user-confirmed Applied status, so the product does not manufacture submission success.
+The application never auto-submits jobs and never sends messages. It can scan and prioritize up to 10,000 jobs in a batch, but applications remain human-confirmed. Drafting surfaces are review-only. Opening an employer application URL is logged separately from a user-confirmed Applied status, so the product does not manufacture submission success. The requested workflow requires an ATS-passed PDF before the application stage unlocks.
 
 ## Attribution
 

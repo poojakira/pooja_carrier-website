@@ -9,6 +9,8 @@ export async function POST(request: Request) {
       source?: string;
       resume?: string;
       needsSponsorship?: boolean;
+      roleQuery?: string;
+      maxJobs?: number;
     };
 
     const source = body.source?.trim() || "";
@@ -21,7 +23,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const jobs = await loadLiveJobs(source, resume, Boolean(body.needsSponsorship));
+    const jobs = await loadLiveJobs(source, resume, Boolean(body.needsSponsorship), body.maxJobs || 100, body.roleQuery || "");
     return NextResponse.json({
       jobs,
       fetchedAt: new Date().toISOString(),
