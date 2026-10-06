@@ -36,7 +36,7 @@ type LiveJob = {
   title: string;
   company: string;
   location: string;
-  source: "greenhouse" | "lever";
+  source: "greenhouse" | "lever" | "ashby" | "smartrecruiters" | "workday";
   sourceLabel: string;
   sourceUrl: string;
   applyUrl: string;
@@ -79,9 +79,16 @@ export function CareerOS() {
   const [tweakResult, setTweakResult] = useState<any | null>(null);
   const [tweaking, setTweaking] = useState(false);
   const [tweakMode, setTweakMode] = useState<"balanced" | "ats" | "concise" | "impact">("balanced");
+  const [tweakSourceResume, setTweakSourceResume] = useState("");
+  const [atsRecheck, setAtsRecheck] = useState<any | null>(null);
+  const [atsChecking, setAtsChecking] = useState(false);
+  const [pdfReady, setPdfReady] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [pdfError, setPdfError] = useState("");
   const [tracker, setTracker] = useState<TrackedRole[]>([]);
   const [profileName, setProfileName] = useState("Pooja Kiran");
   const [target, setTarget] = useState("Security Engineer · AI Security · Application Security");
+  const [roleFocus, setRoleFocus] = useState("Application Security Engineer");
   const [location, setLocation] = useState("United States");
   const [workAuthMode, setWorkAuthMode] = useState<"future-sponsorship" | "no-sponsorship-needed" | "unknown">("future-sponsorship");
   const [liveSource, setLiveSource] = useState("");
@@ -101,9 +108,10 @@ export function CareerOS() {
     if (storedTracker) setTracker(JSON.parse(storedTracker) as TrackedRole[]);
     if (storedAudit) setAudit(JSON.parse(storedAudit) as AuditEntry[]);
     if (storedProfile) {
-      const profile = JSON.parse(storedProfile) as { name?: string; target?: string; location?: string; workAuthMode?: "future-sponsorship" | "no-sponsorship-needed" | "unknown" };
+      const profile = JSON.parse(storedProfile) as { name?: string; target?: string; roleFocus?: string; location?: string; workAuthMode?: "future-sponsorship" | "no-sponsorship-needed" | "unknown" };
       if (profile.name) setProfileName(profile.name);
       if (profile.target) setTarget(profile.target);
+      if (profile.roleFocus) setRoleFocus(profile.roleFocus);
       if (profile.location) setLocation(profile.location);
       if (profile.workAuthMode) setWorkAuthMode(profile.workAuthMode);
     }
@@ -201,6 +209,8 @@ export function CareerOS() {
         body: JSON.stringify({
           source: liveSource,
           resume,
+          roleQuery: roleFocus,
+          maxJobs: 500,
           needsSponsorship: workAuthMode === "future-sponsorship"
         })
       });
@@ -250,6 +260,11 @@ export function CareerOS() {
       window.setTimeout(() => setSavedFlash(""), 1600);
       return;
     }
+    if ((status === "Applied" || status === "Interview" || status === "Offer") && !pdfReady) {
+      setSavedFlash("Generate an ATS-passed PDF before marking this role applied");
+      window.setTimeout(() => setSavedFlash(""), 1800);
+      return;
+    }
     persistTracker(tracker.map((item) => (item.id === id ? { ...item, status } : item)));
     logAudit(role, "status_changed", "Status changed from " + role.status + " to " + status + ". Applied is a user-confirmed status.");
   }
@@ -262,6 +277,10 @@ export function CareerOS() {
 
   async function runTweaker() {
     setTweaking(true);
+    setTweakSourceResume(resume);
+    setAtsRecheck(null);
+    setPdfReady(false);
+    setPdfError("");
     try {
       const response = await fetch("/api/tweak-resume", {
         method: "POST",
@@ -275,10 +294,78 @@ export function CareerOS() {
     }
   }
 
-  function applyTweakedResume() {
+  async function runAtsRecheck() {
     if (!tweakResult?.rewrittenResume) return;
+    setAtsChecking(true);
+    setPdfReady(false);
+    setPdfError("");
+    try {
+      const response = await fetch("/api/ats-recheck", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sourceResume: tweakSourceResume || resume,
+          tailoredResume: tweakResult.rewrittenResume,
+          jd
+        })
+      });
+      const data = await response.json();
+      if (data.recheck) {
+        setAtsRecheck(data.recheck);
+        setPdfReady(false);
+      }
+    } finally {
+      setAtsChecking(false);
+    }
+  }
+
+  async function generatePdf() {
+    if (!tweakResult?.rewrittenResume || !atsRecheck?.pass) return;
+    setPdfGenerating(true);
+    setPdfError("");
+    try {
+      const response = await fetch("/api/resume-pdf", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sourceResume: tweakSourceResume || resume,
+          tailoredResume: tweakResult.rewrittenResume,
+          jd,
+          filename: profileName + "_" + (roleFocus || "Tailored_Resume")
+        })
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        if (data.recheck) setAtsRecheck(data.recheck);
+        setPdfReady(false);
+        setPdfError(data.error || "PDF generation was blocked.");
+        return;
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = (profileName + "_" + (roleFocus || "Tailored_Resume")).replace(/[^a-z0-9_-]+/gi, "_") + ".pdf";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setPdfReady(true);
+      setSavedFlash("ATS-passed PDF generated");
+      window.setTimeout(() => setSavedFlash(""), 1500);
+    } finally {
+      setPdfGenerating(false);
+    }
+  }
+
+  function applyTweakedResume() {
+    if (!tweakResult?.rewrittenResume || !atsRecheck?.pass) {
+      setSavedFlash("ATS robot must pass before replacing the master resume");
+      window.setTimeout(() => setSavedFlash(""), 1600);
+      return;
+    }
     persistResume(tweakResult.rewrittenResume);
-    setSavedFlash("Tweaked resume applied");
+    setSavedFlash("ATS-passed tailored resume applied");
     window.setTimeout(() => setSavedFlash(""), 1400);
   }
 
@@ -298,10 +385,22 @@ export function CareerOS() {
   }
 
   function saveProfile() {
-    localStorage.setItem("pcos-profile", JSON.stringify({ name: profileName, target, location, workAuthMode }));
+    localStorage.setItem("pcos-profile", JSON.stringify({ name: profileName, target, roleFocus, location, workAuthMode }));
     setSavedFlash("Profile saved");
     window.setTimeout(() => setSavedFlash(""), 1300);
   }
+
+  const processStages = [
+    ["Resume", resume.trim().length >= 80, "Master evidence loaded"],
+    ["Understood", Boolean(roleFocus.trim()), roleFocus || "Choose a target role"],
+    ["Matched", Boolean(evaluation || liveJobs.length), evaluation ? evaluation.score + "% fit evaluated" : liveJobs.length ? liveJobs.length + " live matches" : "Run matching"],
+    ["Tailored", Boolean(tweakResult?.rewrittenResume), tweakResult ? "Tailored draft created" : "Tailor a selected job"],
+    ["ATS Recheck", Boolean(atsRecheck), atsRecheck ? atsRecheck.verdict + " · " + atsRecheck.overallScore + "/100" : "Robot scan pending"],
+    ["PDF Ready", Boolean(atsRecheck?.pass && pdfReady), atsRecheck?.pass ? "Unlocked after server recheck" : "Locked until ATS pass"],
+    ["User Applies", tracker.some((item) => item.status === "Applied" || item.status === "Interview" || item.status === "Offer"), "Only user-confirmed applications count"],
+    ["Tracked", tracker.length > 0, tracker.length + " roles in pipeline"],
+    ["Updates", audit.some((entry) => entry.action === "status_changed"), audit.length + " audited events"]
+  ] as const;
 
   return (
     <div className="workspace">
@@ -357,6 +456,24 @@ export function CareerOS() {
 
         <div className="workspaceContent">
           {savedFlash && <div className="toast">{savedFlash}</div>}
+
+          <section className="processRail panel">
+            <div className="processRailHead">
+              <div>
+                <span className="eyebrow">Visible application lifecycle</span>
+                <strong>Resume → Understood → Matched → Tailored → ATS Recheck → PDF Ready → User Applies → Tracked → Updates</strong>
+              </div>
+              <span className="subtlePill">10,000-job scan capacity · human application gate</span>
+            </div>
+            <div className="processSteps">
+              {processStages.map(([label, done, detail], index) => (
+                <div className={done ? "processStep done" : "processStep"} key={label}>
+                  <span>{done ? "✓" : index + 1}</span>
+                  <div><strong>{label}</strong><small>{detail}</small></div>
+                </div>
+              ))}
+            </div>
+          </section>
 
           {view === "today" && (
             <section className="viewStack">
@@ -541,6 +658,54 @@ export function CareerOS() {
                     <article className="metricCard"><span>Edits proposed</span><strong>{tweakResult.changes.length}</strong><small>Reviewable changes</small></article>
                   </div>
 
+                  <article className="panel atsGatePanel">
+                    <div className="panelHead">
+                      <div>
+                        <span className="eyebrow">ATS Robot Recheck</span>
+                        <h2>PDF stays locked until this passes.</h2>
+                      </div>
+                      <button className="button primary" onClick={runAtsRecheck} disabled={atsChecking}>
+                        {atsChecking ? "Scanning..." : atsRecheck ? "Re-run ATS robot" : "Run ATS robot scan"}
+                      </button>
+                    </div>
+
+                    {atsRecheck ? (
+                      <>
+                        <div className="atsSummary">
+                          <div className={"atsVerdict " + atsRecheck.verdict.toLowerCase()}>
+                            <strong>{atsRecheck.overallScore}</strong>
+                            <span>/100 · {atsRecheck.verdict}</span>
+                          </div>
+                          <div>
+                            <strong>Scan ID {atsRecheck.scanId}</strong>
+                            <small>{new Date(atsRecheck.checkedAt).toLocaleString()}</small>
+                          </div>
+                        </div>
+                        <div className="atsChecks">
+                          {atsRecheck.checks.map((check: any) => (
+                            <div className={"atsCheck " + check.status} key={check.id}>
+                              <span>{check.status === "pass" ? "✓" : check.status === "block" ? "!" : "•"}</span>
+                              <div><strong>{check.label} · {check.score}/100</strong><small>{check.detail}</small></div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="pdfGate">
+                          <div>
+                            <span className="eyebrow">PDF gate</span>
+                            <strong>{atsRecheck.pass ? "Passed — PDF is unlocked" : "Locked — fix findings and re-run"}</strong>
+                            <small>The PDF endpoint independently runs the ATS robot again; client-side state alone cannot bypass the gate.</small>
+                          </div>
+                          <button className="button primary" onClick={generatePdf} disabled={!atsRecheck.pass || pdfGenerating}>
+                            {pdfGenerating ? "Generating PDF..." : "Generate ATS-passed PDF"}
+                          </button>
+                        </div>
+                        {pdfError && <div className="inlineError">{pdfError}</div>}
+                      </>
+                    ) : (
+                      <p className="muted">The robot checks evidence integrity, job-language alignment, ATS structure, readability, impact, keyword stuffing, and contact readiness.</p>
+                    )}
+                  </article>
+
                   <div className="tweakerResultGrid">
                     <article className="panel">
                       <div className="panelHead">
@@ -548,7 +713,7 @@ export function CareerOS() {
                           <span className="eyebrow">Tailored version</span>
                           <h2>Recruiter-ready draft</h2>
                         </div>
-                        <button className="button primary small" onClick={applyTweakedResume}>Use as master resume</button>
+                        <button className="button primary small" onClick={applyTweakedResume} disabled={!atsRecheck?.pass}>Use after ATS pass</button>
                       </div>
                       <pre className="resumePreview">{tweakResult.rewrittenResume}</pre>
                     </article>
@@ -788,8 +953,8 @@ export function CareerOS() {
                   <span className="eyebrow">Live Explore</span>
                   <h1>Pull real employer jobs into your workspace.</h1>
                   <p>
-                    Paste a public Greenhouse or Lever careers URL. Career OS fetches the live board, ranks roles
-                    against your resume, shows estimated role chance and sponsorship signal, and preserves the official apply link.
+                    Choose the role you want, then paste a supported public employer careers URL. Career OS fetches the live board,
+                    filters for your chosen role(s), ranks the results, shows role chance and sponsorship signal, and preserves the official apply link.
                   </p>
                 </div>
                 <span className="subtlePill">Live source · no paid feed required</span>
@@ -799,22 +964,31 @@ export function CareerOS() {
                 <div className="liveImporterTop">
                   <div>
                     <span className="eyebrow">Employer board</span>
-                    <h2>Supported now: Greenhouse + Lever</h2>
+                    <h2>Greenhouse · Lever · Ashby · SmartRecruiters · Workday</h2>
                   </div>
                   <span className="privacyPill">Server-side fetch · restricted hosts</span>
                 </div>
+                <label className="formField">
+                  <span>What role do you want to check?</span>
+                  <input
+                    value={roleFocus}
+                    onChange={(event) => setRoleFocus(event.target.value)}
+                    placeholder="e.g. Product Manager, Registered Nurse, Mechanical Engineer"
+                  />
+                  <small>Use commas for multiple role titles. The scan filters around your choices before deep scoring.</small>
+                </label>
                 <div className="liveSourceRow">
                   <input
                     value={liveSource}
                     onChange={(event) => setLiveSource(event.target.value)}
-                    placeholder="https://boards.greenhouse.io/company or https://jobs.lever.co/company"
+                    placeholder="Employer careers URL from Greenhouse, Lever, Ashby, SmartRecruiters, or Workday"
                   />
                   <button className="button primary" onClick={loadLiveBoard} disabled={liveLoading || !liveSource.trim()}>
                     {liveLoading ? "Loading live board..." : "Load live jobs"}
                   </button>
                 </div>
                 <div className="liveExamples">
-                  <span>Career OS accepts only supported public ATS hosts; arbitrary URLs are rejected.</span>
+                  <span>Career OS accepts only supported public ATS hosts; arbitrary URLs are rejected. Large daily scans use a two-pass dedupe/filter/rank pipeline up to 10,000 jobs per batch.</span>
                   {liveFetchedAt && <strong>Last fetched: {new Date(liveFetchedAt).toLocaleString()}</strong>}
                 </div>
                 {liveError && <div className="inlineError">{liveError}</div>}
@@ -848,7 +1022,7 @@ export function CareerOS() {
                         </div>
                       </div>
                       <div className="jobRight">
-                        <a className="button primary small" href={job.applyUrl} target="_blank" rel="noreferrer">Open official job</a>
+                        <a className="button primary small" href={job.applyUrl} target="_blank" rel="noreferrer">View official job</a>
                         <button className="button secondary small" onClick={() => saveLiveJob(job)}>
                           {tracker.some((item) => item.id === job.id) ? "In pipeline" : "Save role"}
                         </button>
@@ -1003,10 +1177,13 @@ export function CareerOS() {
                             <select value={item.status} onChange={(event) => updateStatus(item.id, event.target.value as Status)}>
                               {(["Saved", "Applied", "Interview", "Offer", "Rejected"] as Status[]).map((option) => <option key={option}>{option}</option>)}
                             </select>
-                            {item.applyUrl && item.reviewed && (
+                            {item.applyUrl && item.reviewed && pdfReady && (
                               <a className="textButton" href={item.applyUrl} target="_blank" rel="noreferrer" onClick={() => recordOpen(item)}>
                                 Open official application
                               </a>
+                            )}
+                            {item.applyUrl && item.reviewed && !pdfReady && (
+                              <span className="textButton disabledLink">PDF required before apply</span>
                             )}
                             <button className="textButton" onClick={() => removeRole(item.id)}>Remove</button>
                           </article>
@@ -1140,8 +1317,12 @@ export function CareerOS() {
                     <input value={profileName} onChange={(event) => setProfileName(event.target.value)} />
                   </label>
                   <label className="formField">
-                    <span>Target roles</span>
+                    <span>Target domains / broad search</span>
                     <input value={target} onChange={(event) => setTarget(event.target.value)} />
+                  </label>
+                  <label className="formField">
+                    <span>Role(s) to check now</span>
+                    <input value={roleFocus} onChange={(event) => setRoleFocus(event.target.value)} placeholder="One role or comma-separated roles" />
                   </label>
                   <label className="formField">
                     <span>Search geography</span>

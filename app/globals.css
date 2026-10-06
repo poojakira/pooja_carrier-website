@@ -1164,3 +1164,226 @@ h1, h2, h3, p { margin-top: 0; }
   .auditRow { grid-template-columns: 1fr; }
   .auditRow time { white-space: normal; }
 }
+
+
+/* End-to-end visible lifecycle */
+.processRail {
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.processRailHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 22px;
+  margin-bottom: 16px;
+}
+.processRailHead > div {
+  display: grid;
+  gap: 6px;
+}
+.processRailHead strong {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #3f485e;
+}
+.processSteps {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(100px, 1fr));
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.processStep {
+  min-width: 100px;
+  border: 1px solid #e5e8ef;
+  border-radius: 12px;
+  background: #fafbfc;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 23px 1fr;
+  gap: 8px;
+  align-items: start;
+}
+.processStep > span {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: #edf0f5;
+  color: #8790a4;
+  font-size: 9px;
+  font-weight: 850;
+}
+.processStep > div {
+  display: grid;
+  gap: 3px;
+}
+.processStep strong {
+  font-size: 9px;
+  color: #626c81;
+}
+.processStep small {
+  color: #9aa2b3;
+  font-size: 7.5px;
+  line-height: 1.35;
+}
+.processStep.done {
+  border-color: #d8eade;
+  background: #f3fbf7;
+}
+.processStep.done > span {
+  color: #fff;
+  background: #2b9a70;
+}
+.processStep.done strong {
+  color: #28795b;
+}
+
+/* ATS robot + PDF gate */
+.atsGatePanel {
+  border-color: #dcd7f8;
+  background: linear-gradient(160deg, #fff 0%, #faf8ff 100%);
+}
+.atsSummary {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.atsSummary > div:last-child {
+  display: grid;
+  gap: 3px;
+}
+.atsSummary > div:last-child strong {
+  font-size: 10px;
+}
+.atsSummary > div:last-child small {
+  color: #9098aa;
+  font-size: 9px;
+}
+.atsVerdict {
+  min-width: 105px;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  background: #f2f3f6;
+}
+.atsVerdict strong {
+  font-size: 28px;
+}
+.atsVerdict span {
+  font-size: 9px;
+  font-weight: 750;
+}
+.atsVerdict.pass {
+  background: #eaf8f1;
+  color: #20805c;
+}
+.atsVerdict.revise {
+  background: #fff7e9;
+  color: #a06918;
+}
+.atsVerdict.blocked {
+  background: #fff0f3;
+  color: #b1465a;
+}
+.atsChecks {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 9px;
+}
+.atsCheck {
+  border: 1px solid #e6e8ef;
+  border-radius: 11px;
+  background: #fff;
+  padding: 11px;
+  display: grid;
+  grid-template-columns: 23px 1fr;
+  gap: 8px;
+}
+.atsCheck > span {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: #edf0f5;
+  color: #6d7689;
+  font-size: 9px;
+  font-weight: 850;
+}
+.atsCheck > div {
+  display: grid;
+  gap: 4px;
+}
+.atsCheck strong {
+  font-size: 9.5px;
+}
+.atsCheck small {
+  color: #7c8598;
+  font-size: 8.5px;
+  line-height: 1.45;
+}
+.atsCheck.pass > span {
+  background: #eaf8f1;
+  color: #20805c;
+}
+.atsCheck.warn > span {
+  background: #fff6e7;
+  color: #a06918;
+}
+.atsCheck.block > span {
+  background: #fff0f3;
+  color: #b1465a;
+}
+.pdfGate {
+  margin-top: 16px;
+  border-top: 1px solid #e8e9f1;
+  padding-top: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+.pdfGate > div {
+  display: grid;
+  gap: 4px;
+}
+.pdfGate strong {
+  font-size: 11px;
+}
+.pdfGate small {
+  color: #8e96a8;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.disabledLink {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.formField small {
+  color: #929aac;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+@media (max-width: 1050px) {
+  .processSteps {
+    grid-template-columns: repeat(9, 120px);
+  }
+  .atsChecks {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 700px) {
+  .processRailHead,
+  .pdfGate {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
