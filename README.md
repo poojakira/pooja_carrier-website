@@ -28,6 +28,8 @@ The first fresh build includes:
 - application-kit planning for resume, cover letter, recruiter note, and follow-up;
 - a human-review gate that never auto-submits;
 - a local application pipeline with Saved, Applied, Interview, Offer, and Rejected states;
+- a premium-style review gate: live roles must be explicitly reviewed before they can be marked Applied/Interview/Offer;
+- an application audit trail that distinguishes saved, reviewed, official-application opened, user-confirmed status changes, and removed events;
 - a STAR plus Reflection interview story bank;
 - pipeline analytics and funnel interpretation;
 - local profile preferences;
@@ -74,7 +76,7 @@ The resume-tailoring engine is profession-agnostic: it derives role language fro
 
 This prototype stores editable user state in browser localStorage. That makes the current build easy to run and inspect, but it is not the same as an encrypted production data layer. Do not treat the prototype as a production vault for highly sensitive information.
 
-The application never auto-submits jobs and never sends messages. Drafting surfaces are review-only.
+The application never auto-submits jobs and never sends messages. Drafting surfaces are review-only. Opening an employer application URL is logged separately from a user-confirmed Applied status, so the product does not manufacture submission success.
 
 ## Attribution
 

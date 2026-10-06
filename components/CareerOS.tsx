@@ -18,6 +18,17 @@ type TrackedRole = {
   sponsor: string;
   applyUrl?: string;
   source?: string;
+  reviewed?: boolean;
+};
+
+type AuditEntry = {
+  id: string;
+  at: string;
+  roleId: string;
+  role: string;
+  company: string;
+  action: "saved" | "reviewed" | "opened" | "status_changed" | "removed";
+  detail: string;
 };
 
 type LiveJob = {
@@ -78,14 +89,17 @@ export function CareerOS() {
   const [liveLoading, setLiveLoading] = useState(false);
   const [liveError, setLiveError] = useState("");
   const [liveFetchedAt, setLiveFetchedAt] = useState("");
+  const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [savedFlash, setSavedFlash] = useState("");
 
   useEffect(() => {
     const storedResume = localStorage.getItem("pcos-resume");
     const storedTracker = localStorage.getItem("pcos-tracker");
     const storedProfile = localStorage.getItem("pcos-profile");
+    const storedAudit = localStorage.getItem("pcos-audit");
     if (storedResume) setResume(storedResume);
     if (storedTracker) setTracker(JSON.parse(storedTracker) as TrackedRole[]);
+    if (storedAudit) setAudit(JSON.parse(storedAudit) as AuditEntry[]);
     if (storedProfile) {
       const profile = JSON.parse(storedProfile) as { name?: string; target?: string; location?: string; workAuthMode?: "future-sponsorship" | "no-sponsorship-needed" | "unknown" };
       if (profile.name) setProfileName(profile.name);
@@ -124,26 +138,55 @@ export function CareerOS() {
     localStorage.setItem("pcos-tracker", JSON.stringify(next));
   }
 
+  function logAudit(role: Pick<TrackedRole, "id" | "title" | "company">, action: AuditEntry["action"], detail: string) {
+    const entry: AuditEntry = {
+      id: role.id + "-" + Date.now() + "-" + action,
+      at: new Date().toISOString(),
+      roleId: role.id,
+      role: role.title,
+      company: role.company,
+      action,
+      detail
+    };
+    const next = [entry, ...audit].slice(0, 100);
+    setAudit(next);
+    localStorage.setItem("pcos-audit", JSON.stringify(next));
+  }
+
+  function markReviewed(id: string) {
+    const role = tracker.find((item) => item.id === id);
+    if (!role) return;
+    const next = tracker.map((item) => item.id === id ? { ...item, reviewed: true } : item);
+    persistTracker(next);
+    logAudit(role, "reviewed", "User reviewed the application record before opening the official application.");
+    setSavedFlash("Review gate complete");
+    window.setTimeout(() => setSavedFlash(""), 1300);
+  }
+
+  function recordOpen(role: TrackedRole) {
+    logAudit(role, "opened", "Opened the official employer application URL. This is not recorded as a submission.");
+  }
+
   function saveLiveJob(job: LiveJob) {
     if (tracker.some((item) => item.id === job.id)) {
       setSavedFlash("Already in pipeline");
       window.setTimeout(() => setSavedFlash(""), 1300);
       return;
     }
-    persistTracker([
-      ...tracker,
-      {
-        id: job.id,
-        title: job.title,
-        company: job.company,
-        location: job.location,
-        fit: job.fit,
-        status: "Saved",
-        sponsor: job.sponsorshipLabel,
-        applyUrl: job.applyUrl,
-        source: job.sourceLabel
-      }
-    ]);
+    const role: TrackedRole = {
+      id: job.id,
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      fit: job.fit,
+      status: "Saved",
+      sponsor: job.sponsorshipLabel,
+      applyUrl: job.applyUrl,
+      source: job.sourceLabel,
+      reviewed: false
+    };
+    persistTracker([...tracker, role]);
+    logAudit(role, "saved", "Saved from a live " + job.sourceLabel + " board.");
     setSavedFlash("Live role saved");
     window.setTimeout(() => setSavedFlash(""), 1300);
   }
@@ -183,27 +226,37 @@ export function CareerOS() {
       window.setTimeout(() => setSavedFlash(""), 1300);
       return;
     }
-    persistTracker([
-      ...tracker,
-      {
-        id: job.id,
-        title: job.title,
-        company: job.company,
-        location: job.location,
-        fit: job.fit,
-        status: "Saved",
-        sponsor: job.sponsor
-      }
-    ]);
+    const role: TrackedRole = {
+      id: job.id,
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      fit: job.fit,
+      status: "Saved",
+      sponsor: job.sponsor,
+      reviewed: false
+    };
+    persistTracker([...tracker, role]);
+    logAudit(role, "saved", "Saved from the demo catalog.");
     setSavedFlash("Saved to pipeline");
     window.setTimeout(() => setSavedFlash(""), 1300);
   }
 
   function updateStatus(id: string, status: Status) {
+    const role = tracker.find((item) => item.id === id);
+    if (!role) return;
+    if ((status === "Applied" || status === "Interview" || status === "Offer") && !role.reviewed) {
+      setSavedFlash("Review this role before marking it applied");
+      window.setTimeout(() => setSavedFlash(""), 1600);
+      return;
+    }
     persistTracker(tracker.map((item) => (item.id === id ? { ...item, status } : item)));
+    logAudit(role, "status_changed", "Status changed from " + role.status + " to " + status + ". Applied is a user-confirmed status.");
   }
 
   function removeRole(id: string) {
+    const role = tracker.find((item) => item.id === id);
+    if (role) logAudit(role, "removed", "Removed from the active pipeline.");
     persistTracker(tracker.filter((item) => item.id !== id));
   }
 
@@ -943,10 +996,18 @@ export function CareerOS() {
                             <h3>{item.title}</h3>
                             <p>{item.location}</p>
                             <div className="pipelineMeta"><span>{item.fit}% fit</span><span>{item.sponsor}</span></div>
+                            <div className="reviewGate">
+                              <span className={item.reviewed ? "gateDone" : "gatePending"}>{item.reviewed ? "Reviewed" : "Review required"}</span>
+                              {!item.reviewed && <button type="button" onClick={() => markReviewed(item.id)}>Mark reviewed</button>}
+                            </div>
                             <select value={item.status} onChange={(event) => updateStatus(item.id, event.target.value as Status)}>
                               {(["Saved", "Applied", "Interview", "Offer", "Rejected"] as Status[]).map((option) => <option key={option}>{option}</option>)}
                             </select>
-                            {item.applyUrl && <a className="textButton" href={item.applyUrl} target="_blank" rel="noreferrer">Official job</a>}
+                            {item.applyUrl && item.reviewed && (
+                              <a className="textButton" href={item.applyUrl} target="_blank" rel="noreferrer" onClick={() => recordOpen(item)}>
+                                Open official application
+                              </a>
+                            )}
                             <button className="textButton" onClick={() => removeRole(item.id)}>Remove</button>
                           </article>
                         ))}
@@ -954,6 +1015,30 @@ export function CareerOS() {
                     </section>
                   ))}
                 </div>
+              )}
+
+              {audit.length > 0 && (
+                <article className="panel auditPanel">
+                  <div className="panelHead">
+                    <div>
+                      <span className="eyebrow">Application audit</span>
+                      <h2>What actually happened</h2>
+                    </div>
+                    <span className="subtlePill">Latest {Math.min(audit.length, 12)} events</span>
+                  </div>
+                  <div className="auditList">
+                    {audit.slice(0, 12).map((entry) => (
+                      <div className="auditRow" key={entry.id}>
+                        <span className={"auditAction " + entry.action}>{entry.action.replace("_", " ")}</span>
+                        <div>
+                          <strong>{entry.role} · {entry.company}</strong>
+                          <p>{entry.detail}</p>
+                        </div>
+                        <time>{new Date(entry.at).toLocaleString()}</time>
+                      </div>
+                    ))}
+                  </div>
+                </article>
               )}
             </section>
           )}
