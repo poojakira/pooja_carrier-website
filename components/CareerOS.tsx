@@ -50,6 +50,7 @@ export function CareerOS() {
   const [profileName, setProfileName] = useState("Pooja Kiran");
   const [target, setTarget] = useState("Security Engineer · AI Security · Application Security");
   const [location, setLocation] = useState("United States");
+  const [workAuthMode, setWorkAuthMode] = useState<"future-sponsorship" | "no-sponsorship-needed" | "unknown">("future-sponsorship");
   const [savedFlash, setSavedFlash] = useState("");
 
   useEffect(() => {
@@ -59,10 +60,11 @@ export function CareerOS() {
     if (storedResume) setResume(storedResume);
     if (storedTracker) setTracker(JSON.parse(storedTracker) as TrackedRole[]);
     if (storedProfile) {
-      const profile = JSON.parse(storedProfile) as { name?: string; target?: string; location?: string };
+      const profile = JSON.parse(storedProfile) as { name?: string; target?: string; location?: string; workAuthMode?: "future-sponsorship" | "no-sponsorship-needed" | "unknown" };
       if (profile.name) setProfileName(profile.name);
       if (profile.target) setTarget(profile.target);
       if (profile.location) setLocation(profile.location);
+      if (profile.workAuthMode) setWorkAuthMode(profile.workAuthMode);
     }
   }, []);
 
@@ -153,7 +155,7 @@ export function CareerOS() {
       const response = await fetch("/api/evaluate", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ resume, jd })
+        body: JSON.stringify({ resume, jd, needsSponsorship: workAuthMode === "future-sponsorship" })
       });
       const data = (await response.json()) as { evaluation?: Evaluation; error?: string };
       if (data.evaluation) setEvaluation(data.evaluation);
@@ -163,7 +165,7 @@ export function CareerOS() {
   }
 
   function saveProfile() {
-    localStorage.setItem("pcos-profile", JSON.stringify({ name: profileName, target, location }));
+    localStorage.setItem("pcos-profile", JSON.stringify({ name: profileName, target, location, workAuthMode }));
     setSavedFlash("Profile saved");
     window.setTimeout(() => setSavedFlash(""), 1300);
   }
@@ -538,6 +540,24 @@ export function CareerOS() {
 
               {evaluation && (
                 <div className="evaluationResult">
+                  <div className="evaluationScoreGrid">
+                    <article className="panel scoreSignal">
+                      <span className="eyebrow">Evidence fit</span>
+                      <strong>{evaluation.score}%</strong>
+                      <small>Resume ↔ role alignment</small>
+                    </article>
+                    <article className="panel scoreSignal roleChanceSignal">
+                      <span className="eyebrow">Estimated role chance</span>
+                      <strong>{evaluation.roleChance.percentage}%</strong>
+                      <small>{evaluation.roleChance.label} · {evaluation.roleChance.confidence} confidence</small>
+                    </article>
+                    <article className="panel scoreSignal sponsorSignal">
+                      <span className="eyebrow">Visa sponsorship chance</span>
+                      <strong>{evaluation.sponsorship.percentage}%</strong>
+                      <small>{evaluation.sponsorship.label} · posting-based</small>
+                    </article>
+                  </div>
+
                   <article className="panel verdictPanel">
                     <div className={"bigScore " + scoreTone(evaluation.score)}>
                       <strong>{evaluation.score}</strong><span>/100</span>
@@ -550,6 +570,24 @@ export function CareerOS() {
                       </p>
                     </div>
                     <button className="button secondary" onClick={() => setView("kit")}>Build application kit</button>
+                  </article>
+
+                  <article className="panel estimateExplain">
+                    <div>
+                      <span className="eyebrow">Why these percentages</span>
+                      <h2>Transparent estimates, not fake certainty.</h2>
+                    </div>
+                    <div className="estimateColumns">
+                      <div>
+                        <strong>Role chance factors</strong>
+                        {evaluation.roleChance.factors.map((factor) => <span key={factor}>• {factor}</span>)}
+                      </div>
+                      <div>
+                        <strong>Sponsorship basis</strong>
+                        {evaluation.sponsorship.reasons.map((reason) => <span key={reason}>• {reason}</span>)}
+                      </div>
+                    </div>
+                    <p>{evaluation.roleChance.disclaimer}</p>
                   </article>
 
                   <div className="threeCol">
@@ -876,6 +914,14 @@ export function CareerOS() {
                     <span>Search geography</span>
                     <input value={location} onChange={(event) => setLocation(event.target.value)} />
                   </label>
+                  <label className="formField">
+                    <span>Work authorization</span>
+                    <select value={workAuthMode} onChange={(event) => setWorkAuthMode(event.target.value as "future-sponsorship" | "no-sponsorship-needed" | "unknown")}>
+                      <option value="future-sponsorship">I need future visa sponsorship</option>
+                      <option value="no-sponsorship-needed">I do not need sponsorship</option>
+                      <option value="unknown">Prefer not to apply sponsorship as a constraint</option>
+                    </select>
+                  </label>
                   <div className="settingRow">
                     <div><strong>Human-in-the-loop</strong><small>Never auto-submit applications.</small></div>
                     <span className="switch on"><i /></span>
@@ -897,6 +943,7 @@ export function CareerOS() {
                   <h2>{profileName}</h2>
                   <p>{target}</p>
                   <span className="locationLine">⌖ {location}</span>
+                  <span className="locationLine">Visa setting: {workAuthMode === "future-sponsorship" ? "future sponsorship needed" : workAuthMode === "no-sponsorship-needed" ? "no sponsorship needed" : "not applied to scoring"}</span>
                   <div className="profileRule" />
                   <strong>Core operating principle</strong>
                   <p>Apply better to fewer. Signal over volume. Evidence over keywords. A human decides.</p>

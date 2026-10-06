@@ -3,7 +3,7 @@ import { evaluateRole } from "@/lib/engine";
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as { resume?: string; jd?: string };
+    const body = (await request.json()) as { resume?: string; jd?: string; needsSponsorship?: boolean };
     const resume = body.resume?.trim() || "";
     const jd = body.jd?.trim() || "";
 
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ evaluation: evaluateRole(resume, jd) });
+    return NextResponse.json({ evaluation: evaluateRole(resume, jd, Boolean(body.needsSponsorship)) });
   } catch {
     return NextResponse.json({ error: "Could not evaluate this role." }, { status: 500 });
   }

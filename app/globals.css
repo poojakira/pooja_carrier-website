@@ -948,3 +948,74 @@ h1, h2, h3, p { margin-top: 0; }
   .tweakerControls, .tweakerRun { align-items: stretch; flex-direction: column; }
   .tweakScoreGrid { grid-template-columns: 1fr; }
 }
+
+
+/* Transparent role + sponsorship estimates */
+.evaluationScoreGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.scoreSignal {
+  display: grid;
+  gap: 7px;
+  min-height: 142px;
+  align-content: center;
+}
+.scoreSignal > strong {
+  font-size: 39px;
+  letter-spacing: -0.05em;
+}
+.scoreSignal > small {
+  color: #8b94a7;
+  font-size: 10px;
+}
+.roleChanceSignal {
+  background: linear-gradient(145deg, #ffffff, #f3f0ff);
+  border-color: #ded7ff;
+}
+.roleChanceSignal > strong { color: #6449e6; }
+.sponsorSignal {
+  background: linear-gradient(145deg, #ffffff, #eef9f4);
+  border-color: #d8ede3;
+}
+.sponsorSignal > strong { color: #21865f; }
+.estimateExplain > p {
+  margin: 17px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid #edf0f4;
+  color: #8b94a7;
+  font-size: 10px;
+  line-height: 1.55;
+}
+.estimateColumns {
+  margin-top: 17px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+.estimateColumns > div {
+  display: grid;
+  gap: 7px;
+}
+.estimateColumns strong {
+  font-size: 11px;
+}
+.estimateColumns span {
+  color: #667087;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.formField select {
+  min-height: 43px;
+  border: 1px solid #e1e5ed;
+  background: #fbfbfd;
+  border-radius: 10px;
+  padding: 0 12px;
+  outline: none;
+  color: #364056;
+}
+@media (max-width: 900px) {
+  .evaluationScoreGrid { grid-template-columns: 1fr; }
+  .estimateColumns { grid-template-columns: 1fr; }
+}

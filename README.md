@@ -20,6 +20,8 @@ The first fresh build includes:
 - job-description evaluation with evidence overlap;
 - explicit-requirement extraction and weighting;
 - work-authorization and sponsorship-language review;
+- a posting-based visa sponsorship percentage with confidence and evidence;
+- an estimated role-chance percentage with transparent factors and an explicit uncertainty disclaimer;
 - conservative posting-legitimacy observations;
 - a demo job discovery catalog;
 - application-kit planning for resume, cover letter, recruiter note, and follow-up;
@@ -65,7 +67,7 @@ Verification:
 - no database required for the first build
 - no paid AI or job-provider dependency required
 
-The code intentionally keeps the first version small enough to audit. Live providers, authentication, encrypted storage, PDF generation, and model-backed drafting can be layered on after the core workflow is stable.
+The resume-tailoring engine is profession-agnostic: it derives role language from each job description instead of relying on a hard-coded occupation vocabulary. The code intentionally keeps the first version small enough to audit. Live providers, authentication, encrypted storage, PDF generation, and model-backed drafting can be layered on after the core workflow is stable.
 
 ## Safety and privacy
 

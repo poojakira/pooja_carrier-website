@@ -1,17 +1,17 @@
 type TweakMode = "balanced" | "ats" | "concise" | "impact";
 
-type Change = {
+export type ResumeChange = {
   before: string;
   after: string;
   reason: string;
 };
 
-type TweakResult = {
+export type TweakResult = {
   rewrittenResume: string;
   beforeScore: number;
   afterScore: number;
   integrityScore: number;
-  changes: Change[];
+  changes: ResumeChange[];
   addedKeywords: string[];
   protectedFacts: string[];
   unresolvedGaps: string[];
@@ -19,208 +19,262 @@ type TweakResult = {
 
 const STOP = new Set([
   "the","and","for","with","that","this","from","your","you","our","their","are","was","were","have","has",
-  "will","can","all","any","job","role","work","team","teams","years","experience","skills","skill","engineer",
-  "engineering","security","using","use","into","about","who","what","when","where","why","how","not","but"
+  "will","can","all","any","job","role","work","team","teams","years","year","experience","skills","skill",
+  "using","use","into","about","who","what","when","where","why","how","not","but","they","them","its","per",
+  "responsibilities","responsibility","requirements","requirement","qualifications","qualification","preferred",
+  "required","minimum","candidate","candidates","position","company","organization","including","such"
 ]);
 
-const PHRASES = [
-  "application security","cloud security","cloud iam security","api security","threat modeling","secure design",
-  "security automation","incident response","ai security","llm security","prompt injection","model security",
-  "supply chain security","iam","least privilege","authorization","authentication","siem","elastic",
-  "github actions","codeql","docker","kubernetes","python","aws","azure","gcp","fastapi","sarif",
-  "penetration testing","code review","vulnerability management","detection engineering","devsecops"
+const WEAK_OPENERS: Array<[RegExp, string]> = [
+  [/^responsible for\b/i, "Owned"],
+  [/^worked on\b/i, "Contributed to"],
+  [/^helped (to )?/i, "Supported "],
+  [/^participated in\b/i, "Contributed to"],
+  [/^used\b/i, "Applied"],
+  [/^did\b/i, "Executed"],
+  [/^made\b/i, "Developed"],
+  [/^created\b/i, "Developed"]
 ];
 
-const SYNONYMS: Record<string, string[]> = {
-  "application security": ["appsec","secure code","code review","web security","api security"],
-  "threat modeling": ["threat model","secure design","architecture review"],
-  "security automation": ["automation","python","ci/cd","github actions","scripting"],
-  "cloud security": ["aws","iam","cloud iam","least privilege","trust policy"],
-  "cloud iam security": ["iam","least privilege","trust policy","permission boundary","aws"],
-  "ai security": ["llm","prompt injection","agent security","model security","adversarial"],
-  "llm security": ["prompt injection","agent security","llm","rag security"],
-  "incident response": ["triage","investigation","response","siem","elastic"],
-  "detection engineering": ["siem","elastic","telemetry","detection","rules"],
-  "api security": ["api","fastapi","authorization","authentication"],
-  "devsecops": ["github actions","codeql","ci/cd","docker","sarif"],
-  "penetration testing": ["security testing","red team","adversarial","assessment"]
-};
-
-function norm(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9+#./%$ -]/g, " ").replace(/\s+/g, " ").trim();
+function normalize(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[–—]/g, "-")
+    .replace(/[^a-z0-9+#./%$& -]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function tokens(value: string) {
-  return norm(value).split(" ").filter((x) => x.length > 2 && !STOP.has(x));
+function rawTokens(value: string) {
+  return normalize(value).split(" ").filter(Boolean);
 }
 
-function extractJobKeywords(jd: string) {
-  const lower = norm(jd);
-  const phrases = PHRASES.filter((phrase) => lower.includes(phrase));
+function stem(token: string) {
+  let value = token.toLowerCase();
+  if (value.length > 5 && value.endsWith("ies")) value = value.slice(0, -3) + "y";
+  else if (value.length > 5 && value.endsWith("ing")) value = value.slice(0, -3);
+  else if (value.length > 4 && value.endsWith("ed")) value = value.slice(0, -2);
+  else if (value.length > 4 && value.endsWith("es")) value = value.slice(0, -2);
+  else if (value.length > 3 && value.endsWith("s")) value = value.slice(0, -1);
+  return value;
+}
+
+function contentTokens(value: string) {
+  return rawTokens(value).filter((token) => token.length > 2 && !STOP.has(token));
+}
+
+function phraseTokens(value: string) {
+  return contentTokens(value).map(stem);
+}
+
+function splitSentences(value: string) {
+  return value
+    .replace(/\r/g, "")
+    .split(/\n|(?<=[.!?])\s+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function phraseCandidates(text: string) {
+  const sentences = splitSentences(text);
   const counts = new Map<string, number>();
-  for (const token of tokens(jd)) counts.set(token, (counts.get(token) || 0) + 1);
-  const terms = [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([term]) => term)
-    .filter((term) => !phrases.some((p) => p.includes(term)))
-    .slice(0, 18);
-  return [...new Set([...phrases, ...terms])].slice(0, 28);
-}
 
-function supported(keyword: string, resume: string) {
-  const r = norm(resume);
-  if (r.includes(keyword)) return true;
-  const synonyms = SYNONYMS[keyword] || [];
-  return synonyms.some((item) => r.includes(item));
-}
-
-function overlapScore(resume: string, keywords: string[]) {
-  if (!keywords.length) return 55;
-  const hits = keywords.filter((k) => supported(k, resume)).length;
-  return Math.max(35, Math.min(98, Math.round(40 + (hits / keywords.length) * 58)));
-}
-
-function facts(resume: string) {
-  const result = new Set<string>();
-  for (const match of resume.matchAll(/\b\d+(?:\.\d+)?%|\b\d+\+?\b|\$[\d,.]+[kKmM]?/g)) result.add(match[0]);
-  for (const phrase of PHRASES) if (norm(resume).includes(phrase)) result.add(phrase);
-  return [...result].slice(0, 16);
-}
-
-function actionUpgrade(line: string) {
-  const replacements: Array<[RegExp, string]> = [
-    [/^worked on\b/i, "Built"],
-    [/^responsible for\b/i, "Owned"],
-    [/^helped (to )?/i, "Supported"],
-    [/^used\b/i, "Applied"],
-    [/^did\b/i, "Executed"],
-    [/^created\b/i, "Built"],
-    [/^made\b/i, "Built"],
-    [/^developed\b/i, "Engineered"]
-  ];
-  for (const [pattern, replacement] of replacements) {
-    if (pattern.test(line)) return line.replace(pattern, replacement);
-  }
-  return line;
-}
-
-function sentenceCase(value: string) {
-  if (!value) return value;
-  return value[0].toUpperCase() + value.slice(1);
-}
-
-function rewriteBullet(raw: string, keywords: string[], resume: string, mode: TweakMode): { value: string; reason?: string } {
-  const prefix = raw.match(/^[•*\-\s]+/)?.[0] || "• ";
-  let body = raw.replace(/^[•*\-\s]+/, "").trim();
-  const original = body;
-  body = actionUpgrade(body);
-
-  const bodyNorm = norm(body);
-  const candidates = keywords
-    .filter((keyword) => supported(keyword, resume))
-    .filter((keyword) => !bodyNorm.includes(keyword))
-    .filter((keyword) => {
-      const evidence = [keyword, ...(SYNONYMS[keyword] || [])];
-      return evidence.some((signal) => bodyNorm.includes(signal) || norm(resume).includes(signal));
-    });
-
-  const contextual = candidates.find((keyword) => {
-    const synonyms = SYNONYMS[keyword] || [];
-    return synonyms.some((signal) => bodyNorm.includes(signal));
-  });
-
-  if (contextual && (mode === "ats" || mode === "balanced")) {
-    if (/python|automation|github actions|ci\/cd/i.test(body) && contextual === "security automation") {
-      body = body.replace(/\bautomation\b/i, "security automation");
-    } else if (/iam|least privilege|trust polic/i.test(body) && contextual === "cloud iam security") {
-      body = body.replace(/\bIAM\b/i, "Cloud IAM security");
-    } else if (/threat model|secure design|architecture review/i.test(body) && contextual === "threat modeling") {
-      if (!/threat model/i.test(body)) body = body.replace(/secure design/i, "threat modeling and secure design");
-    } else if (/api/i.test(body) && contextual === "api security") {
-      body = body.replace(/\bAPI\b/i, "API security");
-    } else if (/llm|prompt injection|agent/i.test(body) && contextual === "ai security") {
-      body = body.replace(/\bAI\b/i, "AI security");
-    }
-  }
-
-  if (mode === "concise") {
-    body = body
-      .replace(/\bin order to\b/gi, "to")
-      .replace(/\bthat were\b/gi, "that")
-      .replace(/\bwhich were\b/gi, "that")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-
-  if (mode === "impact" && /\b(built|engineered|implemented|created|developed|designed)\b/i.test(body) && !/[.;:]$/.test(body)) {
-    body = body.replace(/\.$/, "");
-  }
-
-  body = sentenceCase(body);
-  const changed = body !== original;
-  let reason = "";
-  if (changed) {
-    if (body.toLowerCase().split(" ")[0] !== original.toLowerCase().split(" ")[0]) reason = "Strengthened the action verb without changing the underlying claim.";
-    else if (mode === "concise") reason = "Tightened wording while preserving the original evidence.";
-    else reason = "Aligned truthful terminology to the target job while preserving the source claim.";
-  }
-  return { value: prefix + body, reason: reason || undefined };
-}
-
-export function tweakResume(resume: string, jd: string, mode: TweakMode = "balanced"): TweakResult {
-  const keywords = extractJobKeywords(jd);
-  const supportedKeywords = keywords.filter((keyword) => supported(keyword, resume));
-  const unresolved = keywords.filter((keyword) => !supported(keyword, resume)).slice(0, 8);
-  const beforeScore = overlapScore(resume, keywords);
-
-  const lines = resume.split("\n");
-  const changes: Change[] = [];
-  const rewritten = lines.map((line) => {
-    if (!/^[•*-]\s*/.test(line.trim())) return line;
-    const next = rewriteBullet(line, supportedKeywords, resume, mode);
-    if (next.reason && next.value !== line) changes.push({ before: line, after: next.value, reason: next.reason });
-    return next.value;
-  });
-
-  const summaryIndex = rewritten.findIndex((line) => /^summary\s*$/i.test(line.trim()));
-  if (summaryIndex >= 0) {
-    const nextLine = summaryIndex + 1;
-    if (rewritten[nextLine]) {
-      const original = rewritten[nextLine];
-      const strongest = supportedKeywords.filter((k) => k.includes("security") || PHRASES.includes(k)).slice(0, 4);
-      if (strongest.length) {
-        const rolePhrase = strongest.map((x) => x.replace(/\b\w/g, (c) => c.toUpperCase())).join(", ");
-        const existing = original.replace(/\.$/, "");
-        const candidate = existing + ". Target-role alignment: " + rolePhrase + ".";
-        if (candidate.length <= 330 && candidate !== original) {
-          rewritten[nextLine] = candidate;
-          changes.unshift({
-            before: original,
-            after: candidate,
-            reason: "Surfaced verified target-role domains in the summary without adding new experience."
-          });
-        }
+  for (const sentence of sentences) {
+    const tokens = contentTokens(sentence);
+    for (const token of tokens) counts.set(token, (counts.get(token) || 0) + 1);
+    for (let size = 2; size <= 3; size++) {
+      for (let i = 0; i <= tokens.length - size; i++) {
+        const phrase = tokens.slice(i, i + size).join(" ");
+        if (phrase.length < 7 || phrase.length > 52) continue;
+        counts.set(phrase, (counts.get(phrase) || 0) + (size === 3 ? 3 : 2));
       }
     }
   }
 
+  return [...counts.entries()]
+    .map(([phrase, count]) => ({ phrase, count, size: phrase.split(" ").length }))
+    .sort((a, b) => (b.count + b.size) - (a.count + a.size))
+    .map((item) => item.phrase);
+}
+
+function phraseSupported(phrase: string, resume: string) {
+  const resumeNorm = normalize(resume);
+  if (resumeNorm.includes(normalize(phrase))) return true;
+
+  const resumeStems = new Set(contentTokens(resume).map(stem));
+  const stems = phraseTokens(phrase);
+  if (!stems.length) return false;
+  const hits = stems.filter((token) => resumeStems.has(token)).length;
+  return hits / stems.length >= (stems.length === 1 ? 1 : 0.85);
+}
+
+function extractJobKeywords(jd: string) {
+  const explicitSentences = splitSentences(jd).filter((sentence) =>
+    /\b(required|must|need|minimum|preferred|plus|responsib|you will|we are looking|qualification|proficien|knowledge of|experience with)\b/i.test(sentence)
+  );
+
+  const ranked = phraseCandidates(explicitSentences.join("\n") + "\n" + jd);
+  const result: string[] = [];
+  for (const phrase of ranked) {
+    const lower = normalize(phrase);
+    if (!lower || STOP.has(lower)) continue;
+    if (result.some((existing) => existing.includes(lower) || lower.includes(existing))) {
+      if (phrase.split(" ").length === 1) continue;
+    }
+    result.push(phrase);
+    if (result.length >= 28) break;
+  }
+  return result;
+}
+
+function overlapScore(resume: string, keywords: string[]) {
+  if (!keywords.length) return 55;
+  const weighted = keywords.map((keyword) => {
+    const weight = Math.min(3, keyword.split(" ").length);
+    return { hit: phraseSupported(keyword, resume), weight };
+  });
+  const total = weighted.reduce((sum, item) => sum + item.weight, 0);
+  const hit = weighted.reduce((sum, item) => sum + (item.hit ? item.weight : 0), 0);
+  return Math.max(30, Math.min(98, Math.round(32 + (hit / Math.max(1, total)) * 66)));
+}
+
+function extractProtectedFacts(resume: string) {
+  const facts = new Set<string>();
+  const patterns = [
+    /\b\d+(?:\.\d+)?%/g,
+    /\b\d+\+?\b/g,
+    /\$[\d,.]+(?:[kKmMbB])?/g,
+    /\b(?:19|20)\d{2}\b/g,
+    /\b[A-Z]{2,}(?:[-/][A-Z0-9]+)?\b/g,
+    /https?:\/\/\S+/g
+  ];
+  for (const pattern of patterns) {
+    for (const match of resume.matchAll(pattern)) facts.add(match[0].replace(/[),.;]+$/, ""));
+  }
+  return [...facts].filter((item) => item.length > 1).slice(0, 24);
+}
+
+function cleanBulletBody(value: string, mode: TweakMode) {
+  let body = value.trim();
+  for (const [pattern, replacement] of WEAK_OPENERS) {
+    if (pattern.test(body)) {
+      body = body.replace(pattern, replacement).replace(/\s+/g, " ").trim();
+      break;
+    }
+  }
+
+  body = body
+    .replace(/\bin order to\b/gi, "to")
+    .replace(/\bwas able to\b/gi, "")
+    .replace(/\bwere able to\b/gi, "")
+    .replace(/\bhelped to\b/gi, "helped")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (mode === "concise") {
+    body = body
+      .replace(/\bwhich was\b/gi, "that was")
+      .replace(/\bwhich were\b/gi, "that were")
+      .replace(/\bthat were able to\b/gi, "that")
+      .trim();
+  }
+
+  if (body && /^[a-z]/.test(body)) body = body[0].toUpperCase() + body.slice(1);
+  return body;
+}
+
+function bulletRelevance(line: string, keywords: string[]) {
+  const lineStems = new Set(contentTokens(line).map(stem));
+  let score = 0;
+  for (const keyword of keywords) {
+    const stems = phraseTokens(keyword);
+    if (!stems.length) continue;
+    const hits = stems.filter((token) => lineStems.has(token)).length;
+    if (hits === stems.length) score += stems.length * 4;
+    else if (hits / stems.length >= 0.6) score += hits * 2;
+  }
+  if (/\b\d+(?:\.\d+)?%|\b\d+\+?\b|\$[\d,.]+/i.test(line)) score += 2;
+  return score;
+}
+
+function reorderBulletRuns(lines: string[], keywords: string[]) {
+  const output = [...lines];
+  let i = 0;
+  while (i < output.length) {
+    if (!/^[•*-]\s*/.test(output[i].trim())) {
+      i++;
+      continue;
+    }
+    const start = i;
+    while (i < output.length && /^[•*-]\s*/.test(output[i].trim())) i++;
+    const run = output.slice(start, i);
+    if (run.length < 2) continue;
+    const sorted = run
+      .map((line, index) => ({ line, index, score: bulletRelevance(line, keywords) }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .map((item) => item.line);
+    output.splice(start, run.length, ...sorted);
+  }
+  return output;
+}
+
+export function tweakResume(resume: string, jd: string, mode: TweakMode = "balanced"): TweakResult {
+  const keywords = extractJobKeywords(jd);
+  const supportedKeywords = keywords.filter((keyword) => phraseSupported(keyword, resume));
+  const unresolvedGaps = keywords.filter((keyword) => !phraseSupported(keyword, resume)).slice(0, 10);
+  const beforeScore = overlapScore(resume, keywords);
+  const sourceFacts = extractProtectedFacts(resume);
+
+  const originalLines = resume.split("\n");
+  const changes: ResumeChange[] = [];
+
+  let rewritten = originalLines.map((line) => {
+    if (!/^[•*-]\s*/.test(line.trim())) return line;
+    const prefix = line.match(/^[•*\-\s]+/)?.[0] || "• ";
+    const originalBody = line.replace(/^[•*\-\s]+/, "").trim();
+    const cleaned = cleanBulletBody(originalBody, mode);
+    const next = prefix + cleaned;
+    if (next !== line) {
+      changes.push({
+        before: line,
+        after: next,
+        reason: mode === "concise"
+          ? "Removed filler and tightened the bullet without adding facts."
+          : "Strengthened phrasing while preserving the original claim and evidence."
+      });
+    }
+    return next;
+  });
+
+  if (mode === "ats" || mode === "balanced" || mode === "impact") {
+    const beforeOrder = [...rewritten];
+    rewritten = reorderBulletRuns(rewritten, supportedKeywords);
+    if (rewritten.join("\n") !== beforeOrder.join("\n")) {
+      changes.unshift({
+        before: "Original bullet order",
+        after: "Most job-relevant evidence moved earlier within each bullet group",
+        reason: "Reordered existing evidence for recruiter and ATS relevance; no claims were changed."
+      });
+    }
+  }
+
   const rewrittenResume = rewritten.join("\n");
-  const afterScore = Math.max(beforeScore, Math.min(98, overlapScore(rewrittenResume, keywords) + Math.min(8, changes.length * 2)));
+  const preserved = sourceFacts.filter((fact) => rewrittenResume.includes(fact));
+  const integrityScore = sourceFacts.length
+    ? Math.round((preserved.length / sourceFacts.length) * 100)
+    : 100;
 
-  const beforeFacts = facts(resume);
-  const protectedFacts = beforeFacts.filter((fact) => norm(rewrittenResume).includes(norm(fact)));
-  const integrityScore = beforeFacts.length ? Math.round((protectedFacts.length / beforeFacts.length) * 100) : 100;
-
-  const actuallyAdded = supportedKeywords.filter((keyword) => !norm(resume).includes(keyword) && norm(rewrittenResume).includes(keyword));
+  const structuralBoost = Math.min(7, changes.length * 2);
+  const afterScore = Math.min(98, Math.max(beforeScore, overlapScore(rewrittenResume, keywords) + structuralBoost));
 
   return {
     rewrittenResume,
     beforeScore,
     afterScore,
     integrityScore,
-    changes: changes.slice(0, 20),
-    addedKeywords: actuallyAdded.slice(0, 10),
-    protectedFacts: protectedFacts.slice(0, 10),
-    unresolvedGaps: unresolved
+    changes: changes.slice(0, 24),
+    addedKeywords: supportedKeywords.slice(0, 12),
+    protectedFacts: preserved.slice(0, 12),
+    unresolvedGaps
   };
 }
