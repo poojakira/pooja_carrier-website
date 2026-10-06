@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Pooja Career OS",
+  title: "Carrier OS",
   description: "A human-in-the-loop career operations workspace for evaluating jobs, improving resumes, building application kits, and tracking outcomes."
 };
 
