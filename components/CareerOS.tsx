@@ -845,12 +845,12 @@ export function CareerOS() {
                       <small>Resume ↔ role alignment</small>
                     </article>
                     <article className="panel scoreSignal roleChanceSignal">
-                      <span className="eyebrow">Estimated role chance</span>
+                      <span className="eyebrow">Role-screening heuristic</span>
                       <strong>{evaluation.roleChance.percentage}%</strong>
                       <small>{evaluation.roleChance.label} · {evaluation.roleChance.confidence} confidence</small>
                     </article>
                     <article className="panel scoreSignal sponsorSignal">
-                      <span className="eyebrow">Visa sponsorship chance</span>
+                      <span className="eyebrow">Posting-based visa signal</span>
                       <strong>{evaluation.sponsorship.percentage}%</strong>
                       <small>{evaluation.sponsorship.label} · posting-based</small>
                     </article>
@@ -872,12 +872,12 @@ export function CareerOS() {
 
                   <article className="panel estimateExplain">
                     <div>
-                      <span className="eyebrow">Why these percentages</span>
-                      <h2>Transparent estimates, not fake certainty.</h2>
+                      <span className="eyebrow">How these heuristics are calculated</span>
+                      <h2>Heuristic scores, not hiring probabilities.</h2>
                     </div>
                     <div className="estimateColumns">
                       <div>
-                        <strong>Role chance factors</strong>
+                        <strong>Role heuristic factors</strong>
                         {evaluation.roleChance.factors.map((factor) => <span key={factor}>• {factor}</span>)}
                       </div>
                       <div>
@@ -885,7 +885,7 @@ export function CareerOS() {
                         {evaluation.sponsorship.reasons.map((reason) => <span key={reason}>• {reason}</span>)}
                       </div>
                     </div>
-                    <p>{evaluation.roleChance.disclaimer}</p>
+                    <p>{evaluation.roleChance.disclaimer} Employer sponsorship cannot be confirmed from posting language alone; verify it with the recruiting team.</p>
                   </article>
 
                   <div className="threeCol">
@@ -1017,8 +1017,8 @@ export function CareerOS() {
                         </div>
                         <div className="liveSignals">
                           <span><b>{job.fit}%</b> fit</span>
-                          <span><b>{job.roleChance}%</b> role chance · {job.roleConfidence}</span>
-                          <span><b>{job.sponsorshipChance}%</b> visa · {job.sponsorshipLabel}</span>
+                          <span><b>{job.roleChance}%</b> role heuristic · {job.roleConfidence}</span>
+                          <span><b>{job.sponsorshipChance}%</b> visa signal · {job.sponsorshipLabel}</span>
                         </div>
                       </div>
                       <div className="jobRight">
