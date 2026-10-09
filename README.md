@@ -117,3 +117,9 @@ See [evidence and limitations](docs/VERIFICATION_STATUS_2026-10-09.md). Passing 
 
 
 Maintenance checks and their limits are recorded in [the October 9 fix verification](docs/FIX_VERIFICATION_2026-10-09.md).
+
+## CI and scoring evidence boundary (October 9, 2026)
+
+GitHub Actions was reported disabled in the repository's October 9 verification record. The committed `.github/workflows/ci.yml` contains Node.js 22 installation, type-checking and build steps, but successful local Node.js 24 results do **not** prove a hosted Node.js 22 run for the current commit. The workflow can be manually dispatched after GitHub Actions is enabled by the repository administrator; activation, branch rules and a passing run must be checked in GitHub before claiming CI is green.
+
+The interface calls its posting scores **role-screening heuristics** and **posting-based visa signals**. These percentages are deterministic ranking aids, not calibrated probabilities of interview, selection, or future visa sponsorship. A posting's language cannot establish that the employer will sponsor an individual applicant. Use the official posting and a recruiter confirmation for that decision. The application flow remains human-reviewed and does not claim completed submissions.
