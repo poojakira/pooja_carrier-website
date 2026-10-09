@@ -20,8 +20,8 @@ The first fresh build includes:
 - job-description evaluation with evidence overlap;
 - explicit-requirement extraction and weighting;
 - work-authorization and sponsorship-language review;
-- a posting-based visa sponsorship percentage with confidence and evidence;
-- an estimated role-chance percentage with transparent factors and an explicit uncertainty disclaimer;
+- a posting-based visa sponsorship indicator rendered as a percentage, with rule-based confidence and evidence; this is not a calibrated probability;
+- a heuristic role-chance indicator rendered as a percentage, with transparent factors and an explicit uncertainty disclaimer; it does not predict employer selection;
 - conservative posting-legitimacy observations;
 - live public employer-board ingestion for Greenhouse, Lever, Ashby, SmartRecruiters, and supported public Workday career sites, with server-side host allowlisting, source timestamps, official apply links, resume fit, role-chance estimates, and sponsorship signals;
 - a demo job discovery catalog as an offline/fallback path;
@@ -55,13 +55,12 @@ The first fresh build includes:
 Requirements: Node.js 22 or newer.
 
 1. Clone the repository.
-2. Run npm ci.
+2. Run npm install.
 3. Run npm run dev.
 4. Open http://localhost:3000.
 
 Verification:
 
-- npm ci
 - npm run typecheck
 - npm run build
 
@@ -76,7 +75,7 @@ Verification:
 - no database required for the first build
 - no paid AI or job-provider dependency required
 
-The resume-tailoring engine is profession-agnostic: it derives role language from each job description instead of relying on a hard-coded occupation vocabulary. The code intentionally keeps the first version small enough to audit. Live providers, authentication, encrypted storage, PDF generation, and model-backed drafting can be layered on after the core workflow is stable.
+The resume-tailoring engine is profession-agnostic: it derives role language from each job description instead of relying on a hard-coded occupation vocabulary. The code intentionally keeps the first version small enough to audit. Public employer-board adapters and a server-side PDF route are implemented in the prototype. Authentication, encrypted storage, and model-backed drafting remain future work. Their presence in the roadmap is not evidence of a tested production integration.
 
 ## Safety and privacy
 
@@ -99,12 +98,12 @@ See THIRD_PARTY_NOTICES.md for details.
 The recommended next layer is:
 
 - real authentication and encrypted profile storage;
-- expand live job feeds beyond the current Greenhouse and Lever adapters to additional employer ATS sources;
+- validate the existing Greenhouse, Lever, Ashby, SmartRecruiters, and Workday adapters against current official employer sources before expanding feed coverage;
 - role freshness and canonical employer-link verification;
 - recruiter and hiring-manager research;
 - document upload and parsing;
 - model-backed drafting with evidence-grounding checks;
-- ATS-friendly PDF generation;
+- rendering and accessibility checks for generated PDFs;
 - scheduled job scans;
 - email/calendar follow-up integrations;
 - automated tests for the evaluation engine;
@@ -115,3 +114,6 @@ The recommended next layer is:
 ## Verification status — October 9, 2026
 
 See [evidence and limitations](docs/VERIFICATION_STATUS_2026-10-09.md). Passing CI at a dated commit or a preview deployment does not certify all source, security controls or operational claims.
+
+
+Maintenance checks and their limits are recorded in [the October 9 fix verification](docs/FIX_VERIFICATION_2026-10-09.md).
