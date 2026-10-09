@@ -55,12 +55,13 @@ The first fresh build includes:
 Requirements: Node.js 22 or newer.
 
 1. Clone the repository.
-2. Run npm install.
+2. Run npm ci.
 3. Run npm run dev.
 4. Open http://localhost:3000.
 
 Verification:
 
+- npm ci
 - npm run typecheck
 - npm run build
 
