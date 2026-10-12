@@ -24,9 +24,76 @@ function wanted(title: string, roleQuery: string) {
   return targets.some((target) => hay.includes(target) || target.includes(hay));
 }
 
+
+const MAX_REQUEST_BYTES = 16 * 1024 * 1024;
+const JOB_FIELD_LIMITS: Record<keyof InputJob, number> = {
+  id: 200,
+  title: 250,
+  company: 250,
+  location: 250,
+  description: 25_000,
+  applyUrl: 2_000,
+  source: 100
+};
+
+class BatchInputError extends Error {
+  constructor(message: string, readonly status: number = 400) {
+    super(message);
+  }
+}
+
+async function boundedJson(request: Request): Promise<unknown> {
+  const claimed = request.headers.get("content-length");
+  if (claimed !== null) {
+    if (!/^\d+$/.test(claimed)) {
+      throw new BatchInputError("Invalid Content-Length.");
+    }
+    if (Number(claimed) > MAX_REQUEST_BYTES) {
+      throw new BatchInputError("Batch request exceeds 16 MiB.", 413);
+    }
+  }
+  if (!request.body) throw new BatchInputError("A JSON request body is required.");
+  const reader = request.body.getReader();
+  const chunks: Buffer[] = [];
+  let received = 0;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > MAX_REQUEST_BYTES) {
+        await reader.cancel();
+        throw new BatchInputError("Batch request exceeds 16 MiB.", 413);
+      }
+      chunks.push(Buffer.from(value));
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  try {
+    return JSON.parse(Buffer.concat(chunks, received).toString("utf8")) as unknown;
+  } catch {
+    throw new BatchInputError("Provide a valid JSON object.");
+  }
+}
+
+function safeApplyUrl(input?: string): string {
+  if (!input) return "";
+  try {
+    const parsed = new URL(input);
+    return parsed.protocol === "https:" ? parsed.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as {
+    const parsed = await boundedJson(request);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new BatchInputError("Provide a valid JSON object.");
+    }
+    const body = parsed as {
       jobs?: InputJob[];
       resume?: string;
       needsSponsorship?: boolean;
@@ -34,9 +101,20 @@ export async function POST(request: Request) {
       roleQuery?: string;
     };
 
-    const resume = body.resume?.trim() || "";
+    if (typeof body.resume !== "string" || (body.roleQuery !== undefined && typeof body.roleQuery !== "string") ||
+        (body.needsSponsorship !== undefined && typeof body.needsSponsorship !== "boolean")) {
+      throw new BatchInputError("Invalid resume, role query, or sponsorship field.");
+    }
+    if (body.maxResults !== undefined &&
+        (!Number.isInteger(body.maxResults) || body.maxResults < 1 || body.maxResults > 500)) {
+      throw new BatchInputError("maxResults must be an integer from 1 to 500.");
+    }
+    const resume = body.resume.trim();
     const jobs = Array.isArray(body.jobs) ? body.jobs : [];
     const roleQuery = body.roleQuery?.trim() || "";
+    if (resume.length > 50_000 || roleQuery.length > 1_000) {
+      throw new BatchInputError("Resume or role query exceeds the supported length.", 413);
+    }
 
     if (resume.length < 80) {
       return NextResponse.json({ error: "A fuller resume is required." }, { status: 400 });
@@ -46,6 +124,18 @@ export async function POST(request: Request) {
     }
     if (jobs.length > 10000) {
       return NextResponse.json({ error: "Batch limit is 10,000 jobs per scan." }, { status: 413 });
+    }
+
+    for (const job of jobs) {
+      if (!job || typeof job !== "object" || Array.isArray(job)) {
+        throw new BatchInputError("Each job must be an object.");
+      }
+      for (const field of Object.keys(JOB_FIELD_LIMITS) as Array<keyof InputJob>) {
+        const value = job[field];
+        if (value != null && (typeof value !== "string" || value.length > JOB_FIELD_LIMITS[field])) {
+          throw new BatchInputError("A job field has an invalid type or length.");
+        }
+      }
     }
 
     const unique = new Map<string, InputJob>();
@@ -65,7 +155,7 @@ export async function POST(request: Request) {
         title: job.title || "Untitled role",
         company: job.company || "Unknown company",
         location: job.location || "Location not listed",
-        applyUrl: job.applyUrl || "",
+        applyUrl: safeApplyUrl(job.applyUrl),
         source: job.source || "batch",
         fit: result.score,
         roleChance: result.roleChance.percentage,
@@ -76,7 +166,7 @@ export async function POST(request: Request) {
       };
     }).sort((a, b) => b.fit - a.fit || b.roleChance - a.roleChance);
 
-    const limit = Math.max(1, Math.min(500, body.maxResults || 200));
+    const limit = body.maxResults ?? 200;
     const strong = evaluated.filter((job) => job.fit >= 60 || job.roleChance >= 8);
 
     return NextResponse.json({
@@ -90,7 +180,10 @@ export async function POST(request: Request) {
         pass2: "fit + sponsorship + role-chance evaluation"
       }
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof BatchInputError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     return NextResponse.json({ error: "Batch scan failed." }, { status: 500 });
   }
 }

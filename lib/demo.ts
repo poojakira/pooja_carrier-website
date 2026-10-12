@@ -9,7 +9,7 @@ export const demoJobs = [
     company: "Northstar Cloud",
     location: "Phoenix, AZ",
     mode: "On-site",
-    salary: "$118k – $154k",
+    salary: "$118k - $154k",
     fit: 94,
     sponsor: "Possible",
     tags: ["AppSec", "Python", "AWS", "Threat Modeling"]
@@ -20,7 +20,7 @@ export const demoJobs = [
     company: "Orbital Systems",
     location: "Tempe, AZ",
     mode: "On-site",
-    salary: "$125k – $168k",
+    salary: "$125k - $168k",
     fit: 91,
     sponsor: "Possible",
     tags: ["AI Security", "LLM", "API Security", "Python"]
@@ -31,7 +31,7 @@ export const demoJobs = [
     company: "Nimbus Platforms",
     location: "Seattle, WA",
     mode: "Hybrid",
-    salary: "$121k – $160k",
+    salary: "$121k - $160k",
     fit: 87,
     sponsor: "Review",
     tags: ["AWS", "IAM", "SIEM", "Automation"]
@@ -42,7 +42,7 @@ export const demoJobs = [
     company: "Vector Mobility",
     location: "Austin, TX",
     mode: "On-site",
-    salary: "$115k – $150k",
+    salary: "$115k - $150k",
     fit: 84,
     sponsor: "Possible",
     tags: ["Product Security", "API", "Secure Design", "Python"]

@@ -1,4 +1,4 @@
-# Verification status — October 9, 2026
+# Verification status - October 9, 2026
 
 PR #32 pinned checkout and setup-node to immutable commits and disabled checkout credential persistence. PR #34 added package-lock.json and replaced npm install in CI with npm ci, so the current dependency installation is now lockfile-based.
 
