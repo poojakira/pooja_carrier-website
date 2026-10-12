@@ -1,4 +1,4 @@
-# Batch scan API input protection — implementation review, 2026-10-11
+# Batch scan API input protection - implementation review, 2026-10-11
 
 This document describes the proposed **draft pull-request** changes in `app/api/batch-scan/route.ts`. It is **not** an assertion that CI, production deploy, or browser/API integration tests have passed.
 

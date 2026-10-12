@@ -692,7 +692,7 @@ export function CareerOS() {
                         <div className="pdfGate">
                           <div>
                             <span className="eyebrow">PDF gate</span>
-                            <strong>{atsRecheck.pass ? "Passed — PDF is unlocked" : "Locked — fix findings and re-run"}</strong>
+                            <strong>{atsRecheck.pass ? "Passed - PDF is unlocked" : "Locked - fix findings and re-run"}</strong>
                             <small>The PDF endpoint independently runs the ATS robot again; client-side state alone cannot bypass the gate.</small>
                           </div>
                           <button className="button primary" onClick={generatePdf} disabled={!atsRecheck.pass || pdfGenerating}>
@@ -1115,7 +1115,7 @@ export function CareerOS() {
                   <span className="eyebrow">Recruiter note</span>
                   <h2>Short enough to read.</h2>
                   <div className="draftBox">
-                    Hi — I am exploring this role because the work around secure design, application security, and automation maps closely to projects I have built. I would value a quick look at whether that background is relevant to the team.
+                    Hi - I am exploring this role because the work around secure design, application security, and automation maps closely to projects I have built. I would value a quick look at whether that background is relevant to the team.
                   </div>
                 </article>
 

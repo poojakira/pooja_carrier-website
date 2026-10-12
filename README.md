@@ -111,7 +111,7 @@ The recommended next layer is:
 - deployment hardening and observability.
 
 
-## Verification status — October 9, 2026
+## Verification status - October 9, 2026
 
 See [evidence and limitations](docs/VERIFICATION_STATUS_2026-10-09.md). Passing CI at a dated commit or a preview deployment does not certify all source, security controls or operational claims.
 
