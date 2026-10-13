@@ -1,3 +1,5 @@
+> **READ THIS LICENSE BEFORE USING THIS REPOSITORY.** Owner-controlled new releases are subject to the [proprietary All Rights Reserved LICENSE](LICENSE): copying, modification, and redistribution require written authorization except where law or GitHub's Terms allow. Previously granted MIT rights remain valid for versions covered by that license; see the [historical license](docs/license-history/LICENSE-BEFORE-2026-10-13.txt). Third-party rights remain unaffected.
+
 # Carrier OS
 
 Carrier OS is a human-in-the-loop **career-operations prototype** for evaluating roles, improving resume readiness, preparing application kits, organizing interview evidence, and learning from application outcomes. The public repository retains its historical `pooja_carrier-website` name; **Carrier OS** is the current project title, not a shipping-carrier service.
