@@ -37,6 +37,10 @@ try {
   assert.equal((await post('live-jobs', { source: 'https://boards.greenhouse.io/example', resume, maxJobs: 'bad' })).status, 400); checks++;
   console.log(checks + ' API contract checks passed against the production build');
 } finally {
-  child.kill('SIGTERM');
-  await once(child, 'exit');
+  if (child.exitCode === null && child.signalCode === null) {
+    // Register before killing, and only wait while the process is still alive.
+    const exited = once(child, 'exit');
+    child.kill('SIGTERM');
+    await exited;
+  }
 }

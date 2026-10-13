@@ -164,3 +164,19 @@ Security/QA review reran all 22 test methods. Upstream tests use abort-aware moc
 and do not contact external boards; native ATS transport interoperability remains
 unverified. Existing authentication/rate-limit and browser/PDF visual acceptance
 work remains outstanding. Earlier 10-test results above are an earlier checkpoint.
+
+## Integration startup cleanup verification, October 13, 2026 UTC
+
+A local occupied-port reproduction showed the integration harness replacing a
+server startup failure with Node exit code 13: cleanup awaited an exit event
+that had already been emitted. Cleanup now waits only for a running child and
+registers the exit listener before sending SIGTERM.
+
+All **23** local test methods passed, including the new startup-error regression,
+and the normal production-build integration run again passed **26** HTTP
+assertions. Independent review reran the startup failure case. Run `npm test`
+and `npm run test:integration` sequentially: the startup fixture temporarily owns
+localhost port 3123. The application source is unchanged by this harness fix.
+Hosted Node22 execution, native ATS interoperability and complete browser/PDF
+acceptance remain unverified; Vercel Preview Comments is not build evidence.
+
