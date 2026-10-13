@@ -1,11 +1,12 @@
+import { ApiInputError, readApiObject, textField, booleanField } from "@/lib/api-input";
 import { NextResponse } from "next/server";
 import { evaluateRole } from "@/lib/engine";
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as { resume?: string; jd?: string; needsSponsorship?: boolean };
-    const resume = body.resume?.trim() || "";
-    const jd = body.jd?.trim() || "";
+    const body = await readApiObject(request);
+    const resume = textField(body, "resume");
+    const jd = textField(body, "jd");
 
     if (resume.length < 40 || jd.length < 80) {
       return NextResponse.json(
@@ -14,8 +15,11 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ evaluation: evaluateRole(resume, jd, Boolean(body.needsSponsorship)) });
-  } catch {
+    return NextResponse.json({ evaluation: evaluateRole(resume, jd, booleanField(body, "needsSponsorship")) });
+  } catch (error) {
+    if (error instanceof ApiInputError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     return NextResponse.json({ error: "Could not evaluate this role." }, { status: 500 });
   }
 }

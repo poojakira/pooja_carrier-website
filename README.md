@@ -126,3 +126,24 @@ Maintenance checks and their limits are recorded in [the October 9 fix verificat
 GitHub Actions was reported disabled in the repository's October 9 verification record. The committed `.github/workflows/ci.yml` contains Node.js 22 installation, type-checking and build steps, but successful local Node.js 24 results do **not** prove a hosted Node.js 22 run for the current commit. The workflow can be manually dispatched after GitHub Actions is enabled by the repository administrator. The October 12 review branch adds `npm test` to the workflow. **These tests have not been confirmed by a completed hosted run**, so activation, branch rules, API/browser acceptance checks, and a passing run at the final commit must still be checked before claiming CI is green.
 
 The interface calls its posting scores **role-screening heuristics** and **posting-based visa signals**. These percentages are deterministic ranking aids, not calibrated probabilities of interview, selection, or future visa sponsorship. A posting's language cannot establish that the employer will sponsor an individual applicant. Use the official posting and a recruiter confirmation for that decision. The application flow remains human-reviewed and does not claim completed submissions.
+
+## Proposed API input remediation, October 12, 2026
+
+The evaluation, ATS recheck, tailoring, live-board and resume-PDF routes now reject
+non-object JSON and incorrectly typed fields with 400 responses. Their streaming
+body reader caps received data at 1 MiB (413), including requests with absent or
+misleading Content-Length. String lengths, sponsorship booleans, job counts and
+resume-mode values are validated without truthiness coercion. The separate batch
+route retains its existing 16 MiB limit.
+
+Local Node 24 verification of the proposed change: **10** unit tests passed,
+TypeScript checking and the Next.js production build passed, and **26** actual
+HTTP contract checks passed against the local production build. Run
+`npm run test:integration` after building. The checks use synthetic resumes and
+invalid live-board inputs; they do not contact an external board or submit an
+application. CI uses Node 22, which still needs hosted verification for this PR.
+
+Upstream live-board fetch timeouts, redirect handling and response-byte limits,
+authentication/rate limits, full PDF visual acceptance and browser accessibility
+remain outside this targeted change. These results do not establish calibrated
+hiring probabilities or a production security certification.

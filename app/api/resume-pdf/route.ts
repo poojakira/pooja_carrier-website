@@ -1,3 +1,4 @@
+import { ApiInputError, readApiObject, textField } from "@/lib/api-input";
 import { NextResponse } from "next/server";
 import PDFDocument from "pdfkit";
 import { runAtsRobot } from "@/lib/ats-robot";
@@ -10,16 +11,12 @@ function safeFilePart(value: string) {
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as {
-      sourceResume?: string;
-      tailoredResume?: string;
-      jd?: string;
-      filename?: string;
-    };
+    const body = await readApiObject(request);
 
-    const sourceResume = body.sourceResume?.trim() || "";
-    const tailoredResume = body.tailoredResume?.trim() || "";
-    const jd = body.jd?.trim() || "";
+    const sourceResume = textField(body, "sourceResume");
+    const tailoredResume = textField(body, "tailoredResume");
+    const jd = textField(body, "jd");
+    const filename = safeFilePart(textField(body, "filename", 200) || "Tailored_Resume") + ".pdf";
 
     const recheck = runAtsRobot(sourceResume, tailoredResume, jd);
     if (!recheck.pass) {
@@ -86,8 +83,6 @@ export async function POST(request: Request) {
 
     pdf.end();
     const buffer = await finished;
-    const filename = safeFilePart(body.filename || "Tailored_Resume") + ".pdf";
-
     return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
@@ -98,7 +93,10 @@ export async function POST(request: Request) {
         "cache-control": "no-store"
       }
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof ApiInputError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     return NextResponse.json({ error: "Could not generate the ATS-gated PDF." }, { status: 500 });
   }
 }
