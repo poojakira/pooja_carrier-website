@@ -1,6 +1,8 @@
 # Carrier OS
 
-Carrier OS is a human-in-the-loop career operations workspace for evaluating roles, improving resume readiness, preparing coherent application kits, organizing interview evidence, and learning from application outcomes.
+Carrier OS is a human-in-the-loop **career-operations prototype** for evaluating roles, improving resume readiness, preparing application kits, organizing interview evidence, and learning from application outcomes. The public repository retains its historical `pooja_carrier-website` name; **Carrier OS** is the current project title, not a shipping-carrier service.
+
+**Verification boundary:** Node.js type-check/build and the new deterministic scoring regression suite are separate gates. A passing unit test is not proof of live job-board accuracy, visa sponsorship eligibility, 10,000-job production throughput, secure multi-user operation, or candidate hiring outcomes. No user adoption or customer deployment is claimed.
 
 The repository was rebuilt from scratch in October 2026. The product direction combines two useful ideas:
 
@@ -33,7 +35,7 @@ The first fresh build includes:
 - user-selected role targeting: one role or comma-separated target roles drive live discovery and matching;
 - an ATS Robot recheck gate that blocks PDF generation when evidence integrity, alignment, structure, readability, or stuffing checks fail;
 - server-side PDF generation that independently re-runs the ATS gate before releasing the file;
-- a two-pass bulk-scan API that accepts up to 10,000 jobs per batch for dedupe, user-role filtering, fit scoring, sponsorship analysis, and prioritization;
+- a two-pass bulk-scan API with a 10,000-job input count ceiling for dedupe, role filtering, fit scoring, sponsorship-language analysis, and prioritization; the ceiling is not a verified production-throughput guarantee;
 - an application audit trail that distinguishes saved, reviewed, official-application opened, user-confirmed status changes, and removed events;
 - a STAR plus Reflection interview story bank;
 - pipeline analytics and funnel interpretation;
@@ -55,14 +57,15 @@ The first fresh build includes:
 Requirements: Node.js 22 or newer.
 
 1. Clone the repository.
-2. Run npm install.
-3. Run npm run dev.
-4. Open http://localhost:3000.
+2. Run `npm ci`.
+3. Run `npm run typecheck && npm test && npm run build` to check the code and deterministic evaluation guards.
+4. Run `npm run dev`, then open http://localhost:3000.
 
 Verification:
 
-- npm run typecheck
-- npm run build
+- `npm run typecheck`
+- `npm test` (sponsorship blockers, uncertain policies, factual-integrity checks)
+- `npm run build`
 
 ## Architecture
 
@@ -91,7 +94,7 @@ https://github.com/career-ops-hq/career-ops
 Aspirely public product pages:
 https://aspirely.me/
 
-See THIRD_PARTY_NOTICES.md for details.
+See THIRD_PARTY_NOTICES.md for details. For supported reporting and security limits, see [SECURITY.md](SECURITY.md).
 
 ## Next production steps
 
@@ -106,7 +109,7 @@ The recommended next layer is:
 - rendering and accessibility checks for generated PDFs;
 - scheduled job scans;
 - email/calendar follow-up integrations;
-- automated tests for the evaluation engine;
+- broaden evaluation-engine tests to cover adversarial job descriptions, API integration, and input-boundary cases;
 - end-to-end browser tests;
 - deployment hardening and observability.
 
@@ -120,6 +123,6 @@ Maintenance checks and their limits are recorded in [the October 9 fix verificat
 
 ## CI and scoring evidence boundary (October 9, 2026)
 
-GitHub Actions was reported disabled in the repository's October 9 verification record. The committed `.github/workflows/ci.yml` contains Node.js 22 installation, type-checking and build steps, but successful local Node.js 24 results do **not** prove a hosted Node.js 22 run for the current commit. The workflow can be manually dispatched after GitHub Actions is enabled by the repository administrator; activation, branch rules and a passing run must be checked in GitHub before claiming CI is green.
+GitHub Actions was reported disabled in the repository's October 9 verification record. The committed `.github/workflows/ci.yml` contains Node.js 22 installation, type-checking and build steps, but successful local Node.js 24 results do **not** prove a hosted Node.js 22 run for the current commit. The workflow can be manually dispatched after GitHub Actions is enabled by the repository administrator. The October 12 review branch adds `npm test` to the workflow. **These tests have not been confirmed by a completed hosted run**, so activation, branch rules, API/browser acceptance checks, and a passing run at the final commit must still be checked before claiming CI is green.
 
 The interface calls its posting scores **role-screening heuristics** and **posting-based visa signals**. These percentages are deterministic ranking aids, not calibrated probabilities of interview, selection, or future visa sponsorship. A posting's language cannot establish that the employer will sponsor an individual applicant. Use the official posting and a recruiter confirmation for that decision. The application flow remains human-reviewed and does not claim completed submissions.
