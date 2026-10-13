@@ -147,3 +147,20 @@ Upstream live-board fetch timeouts, redirect handling and response-byte limits,
 authentication/rate limits, full PDF visual acceptance and browser accessibility
 remain outside this targeted change. These results do not establish calibrated
 hiring probabilities or a production security certification.
+
+
+## Upstream job-board fetch remediation, October 12, 2026
+
+The proposed PR additionally limits each ATS fetch to 15 seconds and 16 MiB of
+actual streamed response bytes, rejects redirects and unsupported destinations,
+and applies a shared 60-second deadline to the complete board-loading operation.
+Caller cancellation propagates to pending requests. HTTPS board input must not
+contain credentials or a custom port. Headers and tuple header inputs retain
+content-type. A malformed-header regression checks timer cleanup.
+
+Local validation: 22 unit/integration-level test methods, TypeScript checking,
+the production build, and 26 localhost HTTP contract checks passed. Independent
+Security/QA review reran all 22 test methods. Upstream tests use abort-aware mocks
+and do not contact external boards; native ATS transport interoperability remains
+unverified. Existing authentication/rate-limit and browser/PDF visual acceptance
+work remains outstanding. Earlier 10-test results above are an earlier checkpoint.

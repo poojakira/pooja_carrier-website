@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const jobs = await loadLiveJobs(source, resume, booleanField(body, "needsSponsorship"), jobLimit(body), textField(body, "roleQuery", 1_000));
+    const jobs = await loadLiveJobs(source, resume, booleanField(body, "needsSponsorship"), jobLimit(body), textField(body, "roleQuery", 1_000), request.signal);
     return NextResponse.json({
       jobs,
       fetchedAt: new Date().toISOString(),

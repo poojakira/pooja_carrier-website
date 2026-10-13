@@ -1,4 +1,5 @@
 import { evaluateRole } from "@/lib/engine";
+import { fetchATSJson } from "@/lib/ats-fetch";
 
 export type LiveJobSource = "greenhouse" | "lever" | "ashby" | "smartrecruiters" | "workday";
 
@@ -55,20 +56,6 @@ function deepText(value: unknown, depth = 0): string {
   return "";
 }
 
-async function fetchJson(url: string, init?: RequestInit) {
-  const response = await fetch(url, {
-    ...init,
-    headers: {
-      accept: "application/json",
-      "user-agent": "PoojaCareerOS/1.1",
-      ...(init?.headers || {})
-    },
-    cache: "no-store"
-  });
-  if (!response.ok) throw new Error("ATS source returned HTTP " + response.status + ".");
-  return response.json();
-}
-
 function greenhouseToken(input: URL) {
   const host = input.hostname.toLowerCase();
   if (host !== "boards.greenhouse.io" && host !== "job-boards.greenhouse.io" && host !== "boards-api.greenhouse.io") return null;
@@ -119,7 +106,7 @@ function workdayInfo(input: URL) {
   return { tenant: match[1], shard: match[2], host: input.hostname, site };
 }
 
-async function fetchGreenhouse(token: string, maxJobs: number): Promise<BaseJob[]> {
+async function fetchGreenhouse(token: string, maxJobs: number, fetchJson: typeof fetchATSJson): Promise<BaseJob[]> {
   const endpoint = "https://boards-api.greenhouse.io/v1/boards/" + encodeURIComponent(token) + "/jobs?content=true";
   const data = await fetchJson(endpoint) as {
     jobs?: Array<{
@@ -147,7 +134,7 @@ async function fetchGreenhouse(token: string, maxJobs: number): Promise<BaseJob[
   }));
 }
 
-async function fetchLever(site: string, maxJobs: number): Promise<BaseJob[]> {
+async function fetchLever(site: string, maxJobs: number, fetchJson: typeof fetchATSJson): Promise<BaseJob[]> {
   const endpoint = "https://api.lever.co/v0/postings/" + encodeURIComponent(site) + "?mode=json";
   const data = await fetchJson(endpoint) as Array<{
     id: string;
@@ -179,7 +166,7 @@ async function fetchLever(site: string, maxJobs: number): Promise<BaseJob[]> {
   });
 }
 
-async function fetchAshby(board: string, maxJobs: number): Promise<BaseJob[]> {
+async function fetchAshby(board: string, maxJobs: number, fetchJson: typeof fetchATSJson): Promise<BaseJob[]> {
   const endpoint = "https://api.ashbyhq.com/posting-api/job-board/" + encodeURIComponent(board) + "?includeCompensation=true";
   const data = await fetchJson(endpoint) as {
     jobs?: Array<{
@@ -215,7 +202,7 @@ async function fetchAshby(board: string, maxJobs: number): Promise<BaseJob[]> {
     }));
 }
 
-async function fetchSmartRecruiters(company: string, maxJobs: number): Promise<BaseJob[]> {
+async function fetchSmartRecruiters(company: string, maxJobs: number, fetchJson: typeof fetchATSJson): Promise<BaseJob[]> {
   const pageSize = Math.min(100, Math.max(1, maxJobs));
   const endpoint = "https://api.smartrecruiters.com/v1/companies/" + encodeURIComponent(company) + "/postings?limit=" + pageSize + "&offset=0";
   const data = await fetchJson(endpoint) as {
@@ -258,7 +245,7 @@ async function fetchSmartRecruiters(company: string, maxJobs: number): Promise<B
   return details;
 }
 
-async function fetchWorkday(input: ReturnType<typeof workdayInfo>, maxJobs: number): Promise<BaseJob[]> {
+async function fetchWorkday(input: ReturnType<typeof workdayInfo>, maxJobs: number, fetchJson: typeof fetchATSJson): Promise<BaseJob[]> {
   if (!input) return [];
   const baseOrigin = "https://" + input.host;
   const cxsBase = baseOrigin + "/wday/cxs/" + encodeURIComponent(input.tenant) + "/" + encodeURIComponent(input.site);
@@ -330,7 +317,8 @@ export async function loadLiveJobs(
   resume: string,
   needsSponsorship: boolean,
   maxJobs = 60,
-  roleQuery = ""
+  roleQuery = "",
+  signal?: AbortSignal
 ): Promise<LiveJob[]> {
   let parsed: URL;
   try {
@@ -339,44 +327,63 @@ export async function loadLiveJobs(
     throw new Error("Enter a full supported employer job-board URL.");
   }
 
-  const cap = Math.max(1, Math.min(500, maxJobs));
-  const gh = greenhouseToken(parsed);
-  const lv = leverSite(parsed);
-  const ash = ashbyBoard(parsed);
-  const sr = smartRecruitersCompany(parsed);
-  const wd = workdayInfo(parsed);
-
-  let base: BaseJob[];
-  if (gh) base = await fetchGreenhouse(gh, cap);
-  else if (lv) base = await fetchLever(lv, cap);
-  else if (ash) base = await fetchAshby(ash, cap);
-  else if (sr) base = await fetchSmartRecruiters(sr, cap);
-  else if (wd) base = await fetchWorkday(wd, cap);
-  else {
-    throw new Error("Supported live boards: Greenhouse, Lever, Ashby, SmartRecruiters, and public Workday career sites.");
+  if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.port) {
+    throw new Error("Use an HTTPS employer job-board URL without credentials or a custom port.");
   }
-
-  const targets = roleQuery.split(",").map((item) => item.trim().toLowerCase()).filter(Boolean);
-  const roleFiltered = base.filter((job) => {
-    if (!targets.length) return true;
-    const title = job.title.toLowerCase();
-    return targets.some((target) => title.includes(target) || target.includes(title));
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  if (signal?.aborted) controller.abort();
+  else signal?.addEventListener("abort", abort, { once: true });
+  const deadline = setTimeout(abort, 60_000);
+  const fetchJson: typeof fetchATSJson = (url, init) => fetchATSJson(url, {
+    ...init, signal: controller.signal,
   });
+  try {
+    const cap = Math.max(1, Math.min(500, maxJobs));
+    const gh = greenhouseToken(parsed);
+    const lv = leverSite(parsed);
+    const ash = ashbyBoard(parsed);
+    const sr = smartRecruitersCompany(parsed);
+    const wd = workdayInfo(parsed);
 
-  return roleFiltered
-    .filter((job) => job.title && job.applyUrl)
-    .map((job) => {
-      const evalResult = evaluateRole(resume, job.description || (job.title + " " + job.location), needsSponsorship);
-      return {
-        ...job,
-        fit: evalResult.score,
-        roleChance: evalResult.roleChance.percentage,
-        roleConfidence: evalResult.roleChance.confidence,
-        sponsorshipChance: evalResult.sponsorship.percentage,
-        sponsorshipLabel: evalResult.sponsorship.label,
-        sponsorshipConfidence: evalResult.sponsorship.confidence,
-        verdict: evalResult.verdict
-      };
-    })
-    .sort((a, b) => b.fit - a.fit || b.roleChance - a.roleChance);
+    let base: BaseJob[];
+    if (gh) base = await fetchGreenhouse(gh, cap, fetchJson);
+    else if (lv) base = await fetchLever(lv, cap, fetchJson);
+    else if (ash) base = await fetchAshby(ash, cap, fetchJson);
+    else if (sr) base = await fetchSmartRecruiters(sr, cap, fetchJson);
+    else if (wd) base = await fetchWorkday(wd, cap, fetchJson);
+    else {
+      throw new Error("Supported live boards: Greenhouse, Lever, Ashby, SmartRecruiters, and public Workday career sites.");
+    }
+
+    if (controller.signal.aborted) throw new Error("Live board request cancelled or deadline exceeded.");
+
+    const targets = roleQuery.split(",").map((item) => item.trim().toLowerCase()).filter(Boolean);
+    const roleFiltered = base.filter((job) => {
+      if (!targets.length) return true;
+      const title = job.title.toLowerCase();
+      return targets.some((target) => title.includes(target) || target.includes(title));
+    });
+
+    return roleFiltered
+      .filter((job) => job.title && job.applyUrl)
+      .map((job) => {
+        const evalResult = evaluateRole(resume, job.description || (job.title + " " + job.location), needsSponsorship);
+        return {
+          ...job,
+          fit: evalResult.score,
+          roleChance: evalResult.roleChance.percentage,
+          roleConfidence: evalResult.roleChance.confidence,
+          sponsorshipChance: evalResult.sponsorship.percentage,
+          sponsorshipLabel: evalResult.sponsorship.label,
+          sponsorshipConfidence: evalResult.sponsorship.confidence,
+          verdict: evalResult.verdict
+        };
+      })
+      .sort((a, b) => b.fit - a.fit || b.roleChance - a.roleChance);
+  } finally {
+    controller.abort();
+    clearTimeout(deadline);
+    signal?.removeEventListener("abort", abort);
+  }
 }
